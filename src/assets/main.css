@@ -1,0 +1,27 @@
+@import './base.css';
+
+/* PUNO EKRANA */
+html, body {
+  height: 100%;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Makni default Vite template layout (flex/grid centriranje) */
+@media (min-width: 1024px) {
+  body {
+    display: block;
+    place-items: unset;
+  }
+
+  #app {
+    display: block;
+    grid-template-columns: none;
+    padding: 0;
+  }
+}
