@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 
@@ -80,7 +80,6 @@ const fetchAnalytics = async () => {
   }
 }
 
-// Load daily by default
 onMounted(fetchAnalytics)
 </script>
 
@@ -90,30 +89,30 @@ onMounted(fetchAnalytics)
 
       <!-- LOADING OVERLAY -->
       <div v-if="loading" class="loading-overlay">
-        <div class="spinner-border text-success" role="status">
+        <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
 
       <!-- HEADER -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm">
+      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
         <div class="container-fluid">
           <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
 
           <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-outline-success fw-semibold" @click="goRecipes">
+            <button class="btn btn-outline-primary fw-semibold" @click="goRecipes">
               Recipes
             </button>
 
-            <button class="btn btn-outline-success fw-semibold" @click="addRecipe">
+            <button class="btn btn-outline-primary fw-semibold" @click="addRecipe">
               Add Recipe
             </button>
 
-            <button class="btn btn-outline-success fw-semibold" @click="goMealPlanner">
+            <button class="btn btn-outline-primary fw-semibold" @click="goMealPlanner">
               Meal Planner
             </button>
 
-            <button class="btn btn-outline-success fw-semibold profile-btn" @click="goProfile">
+            <button class="btn btn-outline-primary fw-semibold profile-btn" @click="goProfile">
               Profile
             </button>
           </div>
@@ -130,7 +129,7 @@ onMounted(fetchAnalytics)
 
       <!-- MODE SELECT -->
       <div class="card rounded-4 shadow-sm p-3 p-md-4 filter-card mb-4">
-        <h5 class="fw-bold mb-3">Select period</h5>
+        <h5 class="fw-bold mb-3 section-title">Select period</h5>
 
         <div class="row g-3 align-items-end">
           <div class="col-md-3">
@@ -160,7 +159,7 @@ onMounted(fetchAnalytics)
           </div>
 
           <div class="col-md-3">
-            <button class="btn btn-success fw-bold w-100" @click="fetchAnalytics">
+            <button class="btn btn-primary fw-bold w-100" @click="fetchAnalytics">
               Apply
             </button>
           </div>
@@ -173,11 +172,11 @@ onMounted(fetchAnalytics)
       </div>
 
       <!-- RESULTS -->
-      <div v-if="result" class="card rounded-4 shadow-sm p-3 p-md-4">
+      <div v-if="result" class="card rounded-4 shadow-sm p-3 p-md-4 result-card">
 
         <!-- DAILY / MONTHLY / ALL -->
         <div v-if="mode !== 'weekly'">
-          <h5 class="fw-bold mb-3">
+          <h5 class="fw-bold mb-3 section-title">
             {{ mode === 'daily' ? 'Summary for ' + formatDate(result.date) : '' }}
             {{ mode === 'monthly' ? 'Summary for ' + result.month : '' }}
             {{ mode === 'all' ? 'All time summary' : '' }}
@@ -192,7 +191,7 @@ onMounted(fetchAnalytics)
             </div>
           </div>
 
-          <h6 class="fw-bold">Meals</h6>
+          <h6 class="fw-bold section-title">Meals</h6>
           <ul class="list-group list-group-flush">
             <li v-for="meal in result.meals" :key="meal.id" class="list-group-item">
               {{ formatDate(meal.date) }} – {{ meal.recipe.name }}
@@ -202,10 +201,10 @@ onMounted(fetchAnalytics)
 
         <!-- WEEKLY -->
         <div v-if="mode === 'weekly'">
-          <h5 class="fw-bold mb-3">Weekly overview</h5>
+          <h5 class="fw-bold mb-3 section-title">Weekly overview</h5>
 
-          <div v-for="day in result" :key="day.date" class="mb-3 p-3 border rounded-3">
-            <strong>{{ formatDate(day.date) }}</strong>
+          <div v-for="day in result" :key="day.date" class="mb-3 p-3 border rounded-3 weekly-day">
+            <strong class="section-title">{{ formatDate(day.date) }}</strong>
 
             <div class="row text-center my-2">
               <div class="col-md-3" v-for="(val, key) in day.total" :key="key">
@@ -231,11 +230,11 @@ onMounted(fetchAnalytics)
 </template>
 
 <style scoped>
-/* full screen green background */
+/* ✅ ISTO kao recipes-bg */
 .analytics-bg {
   min-height: 100vh;
   width: 100%;
-  background: #198754;
+  background: #F5EFE6;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -243,25 +242,26 @@ onMounted(fetchAnalytics)
   overflow-x: hidden;
 }
 
-/* central panel */
+/* ✅ ISTO kao recipes-panel (samo max-width može ostati 1100 ili 1200) */
 .analytics-panel {
   position: relative;
   width: 100%;
   max-width: 1100px;
   min-height: calc(100vh - 48px);
   background: #ffffff;
+  overflow: hidden;
 }
 
-/* faded logo */
+/* ✅ food slika umjesto logo */
 .analytics-panel::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/logosmartmeal.jpeg');
+  background-image: url('/slika.png');
   background-repeat: no-repeat;
-  background-position: top center;
+  background-position: center;
   background-size: cover;
-  opacity: 0.10;
+  opacity: 0.14;
   z-index: 0;
 }
 
@@ -282,45 +282,83 @@ onMounted(fetchAnalytics)
   backdrop-filter: blur(2px);
 }
 
-/* brand */
+/* brand i naslov boje */
 .brand {
-  color: #198754;
+  color: #9C6644;
 }
 
-/* profile button */
-.profile-btn {
-  border-color: #6fdd8b;
-  color: #198754;
-}
-.profile-btn:hover {
-  background-color: #6fdd8b;
-  border-color: #6fdd8b;
-  color: #fff;
+/* navbar soft */
+.custom-navbar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 0;
 }
 
-/* cards */
-.filter-card {
+/* filter/result card soft */
+.filter-card,
+.result-card {
   background: rgba(255, 255, 255, 0.92);
   border: 0;
 }
 
-/* stat boxes */
+.section-title {
+  color: #3E2723;
+}
+
+/* ✅ smeđi primary (kao login/register/recipes) */
+.btn-primary {
+  background-color: #B08968;
+  border-color: #B08968;
+}
+.btn-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+}
+
+.btn-outline-primary {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+.btn-outline-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
+}
+
+/* profile button (isti kao outline-primary) */
+.profile-btn {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+.profile-btn:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
+}
+
+/* stat boxes u toplijem tonu (ne zeleno) */
 .stat-box {
-  background: #f1f8f5;
+  background: rgba(245, 239, 230, 0.85);
   padding: 0.8rem;
   border-radius: 10px;
+  border: 1px solid rgba(176, 137, 104, 0.25);
 }
 .stat-box.small {
   padding: 0.6rem;
 }
 .stat-value {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1.2rem;
-  color: #198754;
+  color: #9C6644;
 }
 .stat-label {
   text-transform: capitalize;
   font-size: 0.85rem;
   color: #555;
+}
+
+/* weekly day border malo topliji */
+.weekly-day {
+  border-color: rgba(176, 137, 104, 0.25) !important;
+  background: rgba(255, 255, 255, 0.75);
 }
 </style>

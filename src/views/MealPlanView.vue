@@ -71,11 +71,20 @@ const generatePlan = async () => {
 }
 
 // --------------------
-// Nav buttons (isti stil kao Recipes header)
+// Nav buttons
 // --------------------
 const goRecipes = () => router.push('/recipes')
 const addRecipe = () => router.push('/add-recipe')
 const goProfile = () => router.push('/profile')
+
+const clearAll = () => {
+  form.value.date = ''
+  form.value.goal = ''
+  form.value.preferences = []
+  preferenceInput.value = ''
+  result.value = null
+  error.value = ''
+}
 </script>
 
 <template>
@@ -84,26 +93,26 @@ const goProfile = () => router.push('/profile')
 
       <!-- LOADING OVERLAY -->
       <div v-if="loading" class="loading-overlay">
-        <div class="spinner-border text-success" role="status">
+        <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
 
       <!-- HEADER -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm">
+      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
         <div class="container-fluid">
           <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
 
           <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-outline-success fw-semibold" @click="goRecipes">
+            <button class="btn btn-outline-primary fw-semibold" @click="goRecipes">
               Recipes
             </button>
 
-            <button class="btn btn-outline-success fw-semibold" @click="addRecipe">
+            <button class="btn btn-outline-primary fw-semibold" @click="addRecipe">
               Add Recipe
             </button>
 
-            <button class="btn btn-outline-success fw-semibold profile-btn" @click="goProfile">
+            <button class="btn btn-outline-primary fw-semibold profile-btn" @click="goProfile">
               Profile
             </button>
           </div>
@@ -123,7 +132,7 @@ const goProfile = () => router.push('/profile')
 
       <!-- FORM CARD -->
       <div class="card rounded-4 shadow-sm p-3 p-md-4 form-card">
-        <h5 class="fw-bold mb-3">Generate plan</h5>
+        <h5 class="fw-bold mb-3 section-title">Generate plan</h5>
 
         <div class="row g-3">
           <div class="col-md-4">
@@ -153,7 +162,7 @@ const goProfile = () => router.push('/profile')
                 placeholder="Add preference (e.g. vegetarian, low carb)"
                 @keyup.enter="addPreference"
               />
-              <button type="button" class="btn btn-success fw-bold" @click="addPreference">
+              <button type="button" class="btn btn-primary fw-bold" @click="addPreference">
                 Add
               </button>
             </div>
@@ -161,7 +170,11 @@ const goProfile = () => router.push('/profile')
             <!-- Tags -->
             <div class="mt-3" v-if="form.preferences.length">
               <div class="d-flex flex-wrap gap-2">
-                <span v-for="pref in form.preferences" :key="pref" class="badge rounded-pill text-bg-light pref-badge">
+                <span
+                  v-for="pref in form.preferences"
+                  :key="pref"
+                  class="badge rounded-pill pref-badge"
+                >
                   {{ pref }}
                   <button class="btn-close ms-2" aria-label="Remove" @click="removePreference(pref)"></button>
                 </span>
@@ -174,12 +187,12 @@ const goProfile = () => router.push('/profile')
           </div>
         </div>
 
-        <div class="d-flex gap-2 mt-4">
-          <button class="btn btn-success fw-bold flex-grow-1" @click="generatePlan" :disabled="loading">
+        <div class="d-flex gap-2 mt-4 flex-wrap">
+          <button class="btn btn-primary fw-bold flex-grow-1" @click="generatePlan" :disabled="loading">
             Generate meal plan
           </button>
 
-          <button class="btn btn-outline-secondary fw-bold" @click="() => { form.date=''; form.goal=''; form.preferences=[]; preferenceInput=''; result=null; error=''; }" :disabled="loading">
+          <button class="btn btn-outline-secondary fw-bold" @click="clearAll" :disabled="loading">
             Clear
           </button>
         </div>
@@ -187,12 +200,12 @@ const goProfile = () => router.push('/profile')
 
       <!-- RESULT CARD -->
       <div v-if="result" class="card rounded-4 shadow-sm p-3 p-md-4 mt-4 result-card">
-        <h5 class="fw-bold mb-3">Meal plan for {{ result.date }}</h5>
+        <h5 class="fw-bold mb-3 section-title">Meal plan for {{ result.date }}</h5>
 
         <div class="row g-3">
           <div v-for="meal in result.meals" :key="meal.id" class="col-md-6">
             <div class="meal-box p-3 rounded-3 shadow-sm">
-              <div class="fw-bold text-capitalize mb-1">{{ meal.meal_type }}</div>
+              <div class="fw-bold text-capitalize mb-1 meal-title">{{ meal.meal_type }}</div>
               <div class="text-muted small">Recipe ID: {{ meal.recipe_id }}</div>
             </div>
           </div>
@@ -207,11 +220,11 @@ const goProfile = () => router.push('/profile')
 </template>
 
 <style scoped>
-/* full screen green background */
+/* ✅ bež background kao ostale */
 .planner-bg {
   min-height: 100vh;
   width: 100%;
-  background: #198754;
+  background: #F5EFE6;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -219,25 +232,26 @@ const goProfile = () => router.push('/profile')
   overflow-x: hidden;
 }
 
-/* central panel */
+/* panel */
 .planner-panel {
   position: relative;
   width: 100%;
   max-width: 1100px;
   min-height: calc(100vh - 48px);
   background: #ffffff;
+  overflow: hidden;
 }
 
-/* faded logo background */
+/* ✅ food slika */
 .planner-panel::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/logosmartmeal.jpeg');
+  background-image: url('/slika.png');
   background-repeat: no-repeat;
-  background-position: top center;
+  background-position: center;
   background-size: cover;
-  opacity: 0.10;
+  opacity: 0.14;
   z-index: 0;
 }
 
@@ -246,7 +260,7 @@ const goProfile = () => router.push('/profile')
   z-index: 1;
 }
 
-/* loader overlay */
+/* loader */
 .loading-overlay {
   position: absolute;
   inset: 0;
@@ -260,37 +274,73 @@ const goProfile = () => router.push('/profile')
 
 /* brand */
 .brand {
-  color: #198754;
+  color: #9C6644;
 }
 
-/* profile button light green */
-.profile-btn {
-  border-color: #6fdd8b;
-  color: #198754;
-}
-.profile-btn:hover {
-  background-color: #6fdd8b;
-  border-color: #6fdd8b;
-  color: #fff;
+/* navbar soft */
+.custom-navbar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 0;
 }
 
-/* form card */
+/* cards */
 .form-card,
 .result-card {
   background: rgba(255, 255, 255, 0.92);
   border: 0;
 }
 
+.section-title,
+.form-label {
+  color: #3E2723;
+}
+
+/* ✅ smeđi primary */
+.btn-primary {
+  background-color: #B08968;
+  border-color: #B08968;
+}
+.btn-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+}
+
+/* outline primary */
+.btn-outline-primary {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+.btn-outline-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
+}
+
+/* profile button */
+.profile-btn {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+.profile-btn:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
+}
+
 /* preference badges */
 .pref-badge {
-  border: 1px solid rgba(25, 135, 84, 0.25);
-  color: #198754;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(176, 137, 104, 0.45);
+  color: #9C6644;
   padding: 0.55rem 0.75rem;
 }
 
 /* meal boxes */
 .meal-box {
   background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(25, 135, 84, 0.15);
+  border: 1px solid rgba(176, 137, 104, 0.25);
+}
+.meal-title {
+  color: #9C6644;
 }
 </style>

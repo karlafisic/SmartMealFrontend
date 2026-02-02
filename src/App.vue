@@ -11,22 +11,20 @@ const fetchUser = async () => {
   const token = localStorage.getItem('token')
   if (token) {
     try {
-      const { data } = await api.get('/user')
+      const { data } = await api.get('/me')
       userId.value = data.id
     } catch (e) {
       console.error('Failed to fetch user', e)
-      // If unauthorized, maybe clear token? 
       // localStorage.removeItem('token')
+      // userId.value = null
     }
   }
 }
 
 onMounted(() => {
   fetchUser()
-  
-  // Watch for route changes to re-check user info if login happens
+
   router.afterEach(() => {
-    // If we don't have user ID but have token, try fetch again
     if (!userId.value && localStorage.getItem('token')) {
       fetchUser()
     }
@@ -42,15 +40,33 @@ onMounted(() => {
 </template>
 
 <style>
+/* ✅ GLOBAL THEME (bež + smeđe) */
+:root {
+  --bg: #F5EFE6;
+  --text: #3E2723;
+  --brand: #9C6644;
+  --primary: #B08968;
+}
+
+html, body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #198754; 
-  color: #333;
+  background-color: var(--bg);
+  color: var(--text);
 }
 
-h1, h2 {
-  color: #2c3e50;
+/* da router-view uvijek zauzme visinu */
+.app-container {
+  min-height: 100vh;
+}
+
+/* naslovi */
+h1, h2, h3, h4, h5 {
+  color: var(--brand);
 }
 </style>

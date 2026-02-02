@@ -1,13 +1,13 @@
 <template>
   <div class="login-page d-flex align-items-center justify-content-center">
-    <div class="card shadow p-5 rounded-4">
-      <div class="text-center mb-4">
+    <div class="card shadow rounded-4">
+      <div class="text-center mb-5">
         <h2 class="fw-bold brand">SmartMeal AI</h2>
         <p class="text-muted">Plan your meals smartly and effortlessly</p>
       </div>
 
       <form @submit.prevent="login">
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label fw-semibold">Email</label>
           <input
             type="email"
@@ -18,7 +18,7 @@
           />
         </div>
 
-        <div class="mb-3">
+        <div class="mb-4">
           <label class="form-label fw-semibold">Password</label>
           <input
             type="password"
@@ -39,7 +39,7 @@
 
         <button
           type="submit"
-          class="btn btn-success w-100 fw-bold mt-2"
+          class="btn btn-primary w-100 fw-bold mt-4"
           :disabled="loading"
         >
           <span
@@ -50,7 +50,7 @@
         </button>
       </form>
 
-      <div class="text-center mt-3">
+      <div class="text-center mt-5">
         <small class="text-muted">
           Don’t have an account?
           <span class="fw-semibold register-link" @click="goRegister">
@@ -109,31 +109,34 @@ function goRegister() {
 .login-page {
   min-height: 100vh;
   width: 100vw;
-  background: #198754;
+  background: #F5EFE6;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* ⬆️ IZDUŽENA KARTICA */
 .card {
-  position: relative; /* važno zbog ::before */
-  width: 460px;
-  max-width: 100%;
+  position: relative;
+  width: 720px;
+  max-width: 96%;
+  min-height: 640px;         
+  padding: 4.9rem 4rem;       
   overflow: hidden;
   background: #ffffff;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* FADED LOGO BACKGROUND */
+/* FOOD SLIKA – sad se više vidi */
 .card::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/logosmartmeal.jpeg');
+  background-image: url('/slika.png');
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
-  opacity: 0.25;
+  opacity: 0.28;             
   z-index: 0;
 }
 
@@ -148,27 +151,39 @@ function goRegister() {
 }
 
 .brand {
-  color: #198754;
+  color: #9C6644;
+  font-size: 2.2rem;
 }
 
-/* BUTTON GREEN */
-.btn-success {
-  background-color: #198754;
-  border-color: #198754;
+.btn-primary {
+  background-color: #B08968;
+  border-color: #B08968;
+  padding: 0.85rem;
 }
 
-.btn-success:hover {
-  background-color: #157347;
-  border-color: #157347;
+.btn-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
 }
 
-/* REGISTER LINK – GREEN */
 .register-link {
-  color: #198754;
+  color: #9C6644;
   cursor: pointer;
 }
 
 .register-link:hover {
   text-decoration: underline;
+}
+
+.form-label {
+  color: #3E2723;
+}
+
+/* 📱 MOBILE */
+@media (max-width: 576px) {
+  .card {
+    min-height: auto;
+    padding: 2.5rem 2rem;
+  }
 }
 </style>

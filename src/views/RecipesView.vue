@@ -3,20 +3,20 @@
     <div class="recipes-panel shadow-lg rounded-4 p-4 p-md-5">
       <div class="recipe-page container-fluid py-2">
         <!-- HEADER -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
           <div class="container-fluid">
             <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
 
             <div class="ms-auto d-flex gap-2">
-              <button class="btn btn-outline-success fw-semibold" @click="addRecipe">
+              <button class="btn btn-outline-primary fw-semibold" @click="addRecipe">
                 Add Recipe
               </button>
 
-              <button class="btn btn-outline-success fw-semibold" @click="goMealPlanner">
+              <button class="btn btn-outline-primary fw-semibold" @click="goMealPlanner">
                 Meal Planner
               </button>
 
-              <button class="btn btn-outline-success fw-semibold profile-btn" @click="goProfile">
+              <button class="btn btn-outline-primary fw-semibold profile-btn" @click="goProfile">
                 Profile
               </button>
             </div>
@@ -25,7 +25,7 @@
 
         <!-- FILTER CARD -->
         <div v-if="isLoggedIn" class="card mb-4 p-3 rounded-4 shadow-sm filter-card">
-          <h5 class="fw-bold mb-3">Filter Recipes</h5>
+          <h5 class="fw-bold mb-3 section-title">Filter Recipes</h5>
 
           <div class="row g-3 align-items-end">
             <div class="col-md-2">
@@ -88,7 +88,7 @@
             </div>
 
             <div class="col-md-2">
-              <button class="btn btn-success w-100 fw-bold" @click="fetchRecipes">
+              <button class="btn btn-primary w-100 fw-bold" @click="fetchRecipes">
                 Apply
               </button>
             </div>
@@ -103,7 +103,7 @@
 
         <!-- LOADING -->
         <div v-if="loading" class="loading-overlay">
-          <div class="spinner-border text-success" role="status">
+          <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
           </div>
         </div>
@@ -234,47 +234,46 @@ const resetFilters = () => {
 
 const goProfile = () => router.push('/profile')
 const addRecipe = () => router.push('/add-recipe')
-const goMealPlanner = () => router.push('/meal-plan') // promijeni ako ti je druga ruta
+const goMealPlanner = () => router.push('/meal-plan')
 </script>
 
 <style scoped>
-/* full screen green background (kao login) */
+/* ✅ Usklađeno s login/register */
 .recipes-bg {
   min-height: 100vh;
   width: 100%;
-  background: #198754;
+  background: #F5EFE6; /* bež */
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding: 24px;
-  overflow-x: hidden;   /* <-- uklanja horizontalnu strelicu */
+  overflow-x: hidden;
 }
 
-/* centralni panel (kao login card) */
+/* centralni panel */
 .recipes-panel {
   position: relative;
   width: 100%;
   max-width: 1200px;
   min-height: calc(100vh - 48px);
   height: auto;
-  overflow: visible;
+  overflow: hidden;
   background: #ffffff;
 }
 
-/* faded logo u pozadini panela */
+/* ✅ ista food slika kao register/login */
 .recipes-panel::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/logosmartmeal.jpeg');  /* <-- VRACENA SLIKA */
+  background-image: url('/slika.png'); /* isto kao login/register */
   background-repeat: no-repeat;
-  background-position: top center;
+  background-position: center;
   background-size: cover;
-  opacity: 0.10;
+  opacity: 0.14; /* malo manje da ne smeta gridu */
   z-index: 0;
 }
 
-/* sadržaj iznad slike */
 .recipes-panel > * {
   position: relative;
   z-index: 1;
@@ -294,24 +293,57 @@ const goMealPlanner = () => router.push('/meal-plan') // promijeni ako ti je dru
 
 /* brand boja */
 .brand {
-  color: #198754;
+  color: #9C6644;
 }
 
-/* profile gumb svjetliji zeleni */
-.profile-btn {
-  border-color: #6fdd8b;
-  color: #198754;
-}
-.profile-btn:hover {
-  background-color: #6fdd8b;
-  border-color: #6fdd8b;
-  color: #fff;
+/* navbar malo “soft” */
+.custom-navbar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 0;
 }
 
-/* filter card malo “soft” */
+/* filter card soft */
 .filter-card {
   background: rgba(255, 255, 255, 0.92);
   border: 0;
+}
+
+/* naslov sekcija */
+.section-title {
+  color: #3E2723;
+}
+
+/* ✅ Bootstrap primary prebacimo u smeđu (samo unutar ove stranice) */
+.btn-primary {
+  background-color: #B08968;
+  border-color: #B08968;
+}
+
+.btn-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+}
+
+.btn-outline-primary {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+
+.btn-outline-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
+}
+
+/* profile gumb isti kao outline-primary (ali ostavljeno zbog klase) */
+.profile-btn {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+.profile-btn:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
 }
 
 /* dropdown da ide iznad kartica */
@@ -327,7 +359,6 @@ const goMealPlanner = () => router.push('/meal-plan') // promijeni ako ti je dru
   width: 100%;
 }
 
-/* pomakni dropdown strelicu udesno */
 .dropdown-toggle::after {
   margin-left: auto;
   margin-right: 4px;

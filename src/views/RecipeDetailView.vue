@@ -51,15 +51,14 @@ function goToEdit() {
 
       <!-- LOADING OVERLAY -->
       <div v-if="loading" class="loading-overlay">
-        <div class="spinner-border text-success" role="status">
+        <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
 
       <template v-if="recipe">
-
         <!-- HEADER -->
-        <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
           <div>
             <h2 class="fw-bold brand mb-1">{{ recipe.name }}</h2>
             <p class="text-muted mb-0">Recipe details</p>
@@ -70,7 +69,7 @@ function goToEdit() {
               ← Back
             </button>
 
-            <button v-if="isOwner" class="btn btn-outline-success fw-semibold" @click="goToEdit">
+            <button v-if="isOwner" class="btn btn-outline-primary fw-semibold" @click="goToEdit">
               ✏️ Edit
             </button>
 
@@ -90,41 +89,41 @@ function goToEdit() {
           <div class="col-md-4">
             <div class="stat-card p-3 rounded-3 shadow-sm">
               <strong>Calories</strong>
-              <div class="fs-5">{{ recipe.calories }} kcal</div>
+              <div class="fs-5 stat-value">{{ recipe.calories }} kcal</div>
             </div>
           </div>
 
           <div class="col-md-4">
             <div class="stat-card p-3 rounded-3 shadow-sm">
               <strong>Protein</strong>
-              <div class="fs-5">{{ recipe.protein }} g</div>
+              <div class="fs-5 stat-value">{{ recipe.protein }} g</div>
             </div>
           </div>
 
           <div class="col-md-4">
             <div class="stat-card p-3 rounded-3 shadow-sm">
               <strong>Carbs</strong>
-              <div class="fs-5">{{ recipe.carbs }} g</div>
+              <div class="fs-5 stat-value">{{ recipe.carbs }} g</div>
             </div>
           </div>
 
           <div class="col-md-4">
             <div class="stat-card p-3 rounded-3 shadow-sm">
               <strong>Fat</strong>
-              <div class="fs-5">{{ recipe.fat }} g</div>
+              <div class="fs-5 stat-value">{{ recipe.fat }} g</div>
             </div>
           </div>
 
           <div class="col-md-4">
             <div class="stat-card p-3 rounded-3 shadow-sm">
               <strong>Prep Time</strong>
-              <div class="fs-5">{{ recipe.prep_time }} min</div>
+              <div class="fs-5 stat-value">{{ recipe.prep_time }} min</div>
             </div>
           </div>
         </div>
 
         <!-- INGREDIENTS -->
-        <h5 class="fw-bold mb-3">Ingredients</h5>
+        <h5 class="fw-bold mb-3 section-title">Ingredients</h5>
 
         <ul class="list-group list-group-flush">
           <li
@@ -136,7 +135,6 @@ function goToEdit() {
             {{ ing.name }}
           </li>
         </ul>
-
       </template>
 
       <div v-else-if="!loading" class="text-center text-muted">
@@ -148,11 +146,11 @@ function goToEdit() {
 </template>
 
 <style scoped>
-/* full screen green background */
+/* ✅ bež background */
 .details-bg {
   min-height: 100vh;
   width: 100%;
-  background: #198754;
+  background: #F5EFE6;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -160,25 +158,26 @@ function goToEdit() {
   overflow-x: hidden;
 }
 
-/* centralni panel */
+/* panel */
 .details-panel {
   position: relative;
   width: 100%;
   max-width: 900px;
   min-height: calc(100vh - 48px);
   background: #ffffff;
+  overflow: hidden;
 }
 
-/* faded logo u pozadini */
+/* ✅ food pozadina */
 .details-panel::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/logosmartmeal.jpeg');
+  background-image: url('/slika.png');
   background-repeat: no-repeat;
-  background-position: top center;
+  background-position: center;
   background-size: cover;
-  opacity: 0.10;
+  opacity: 0.14;
   z-index: 0;
 }
 
@@ -187,7 +186,7 @@ function goToEdit() {
   z-index: 1;
 }
 
-/* loader overlay */
+/* loader */
 .loading-overlay {
   position: absolute;
   inset: 0;
@@ -199,22 +198,40 @@ function goToEdit() {
   backdrop-filter: blur(2px);
 }
 
-/* brand */
+/* brand + naslovi */
 .brand {
-  color: #198754;
+  color: #9C6644;
+}
+.section-title {
+  color: #3E2723;
 }
 
 /* stat cards */
 .stat-card {
   background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(25, 135, 84, 0.15);
+  border: 1px solid rgba(176, 137, 104, 0.25);
+}
+.stat-value {
+  color: #9C6644;
+  font-weight: 700;
 }
 
-/* ingredient list */
+/* outline primary */
+.btn-outline-primary {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+.btn-outline-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
+}
+
+/* ingredient dot */
 .ingredient-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #198754;
+  background-color: #B08968;
 }
 </style>

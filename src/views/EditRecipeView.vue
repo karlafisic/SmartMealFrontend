@@ -18,7 +18,7 @@ const prep_time = ref('')
 
 // Ingredients
 const allIngredients = ref([])
-const selectedIngredientIds = ref([]) 
+const selectedIngredientIds = ref([])
 const selectedIngredientObjects = ref([])
 
 // Auth token
@@ -87,10 +87,8 @@ const removeIngredientTag = async (id) => {
   error.value = ''
 
   try {
-    // Poziv backend rute za brisanje veze recept–sastojak
     await api.delete(`/recipes/${route.params.id}/ingredients/${id}`)
 
-    // Ukloni iz frontenda nakon uspješnog brisanja
     selectedIngredientIds.value = selectedIngredientIds.value.filter(i => i !== id)
     selectedIngredientObjects.value = selectedIngredientObjects.value.filter(i => i.id !== id)
   } catch (err) {
@@ -108,13 +106,13 @@ const goBack = () => router.back()
 
       <!-- LOADING OVERLAY -->
       <div v-if="loading" class="loading-overlay">
-        <div class="spinner-border text-success" role="status">
+        <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
 
       <!-- HEADER -->
-      <div class="d-flex align-items-center justify-content-between mb-4">
+      <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div>
           <h2 class="fw-bold brand mb-1">Edit Recipe</h2>
           <p class="text-muted mb-0">Update recipe details and ingredients</p>
@@ -166,7 +164,7 @@ const goBack = () => router.back()
       <hr class="my-4" />
 
       <!-- INGREDIENTS -->
-      <h5 class="fw-bold mb-3">Ingredients</h5>
+      <h5 class="fw-bold mb-3 section-title">Ingredients</h5>
 
       <div class="row g-2 align-items-end">
         <div class="col-md-8">
@@ -194,7 +192,7 @@ const goBack = () => router.back()
           <span
             v-for="ing in selectedIngredientObjects"
             :key="ing.id"
-            class="badge rounded-pill text-bg-light ingredient-badge"
+            class="badge rounded-pill ingredient-badge"
           >
             {{ ing.name }}
             <button class="btn-close ms-2" aria-label="Remove" @click="removeIngredientTag(ing.id)"></button>
@@ -207,9 +205,9 @@ const goBack = () => router.back()
       </div>
 
       <!-- ACTIONS -->
-      <div class="d-flex gap-2 mt-4">
+      <div class="d-flex gap-2 mt-4 flex-wrap">
         <button
-          class="btn btn-success fw-bold flex-grow-1"
+          class="btn btn-primary fw-bold flex-grow-1"
           @click="submit"
           :disabled="loading || !name"
         >
@@ -229,11 +227,11 @@ const goBack = () => router.back()
 </template>
 
 <style scoped>
-/* full screen green background */
+/* ✅ isti background kao recipes/login/register */
 .edit-bg {
   min-height: 100vh;
   width: 100%;
-  background: #198754;
+  background: #F5EFE6;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -241,25 +239,26 @@ const goBack = () => router.back()
   overflow-x: hidden;
 }
 
-/* centralni panel */
+/* panel (sličan recipes-panel) */
 .edit-panel {
   position: relative;
   width: 100%;
-  max-width: 900px;
+  max-width: 1200px;             
   min-height: calc(100vh - 48px);
   background: #ffffff;
+  overflow: hidden;
 }
 
-/* faded logo u pozadini */
+/* ✅ food slika kao na ostalim stranicama */
 .edit-panel::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/logosmartmeal.jpeg');
+  background-image: url('/slika.png');
   background-repeat: no-repeat;
-  background-position: top center;
+  background-position: center;
   background-size: cover;
-  opacity: 0.10;
+  opacity: 0.14;
   z-index: 0;
 }
 
@@ -280,15 +279,30 @@ const goBack = () => router.back()
   backdrop-filter: blur(2px);
 }
 
-/* brand */
+/* brand + naslovi */
 .brand {
-  color: #198754;
+  color: #9C6644;
+}
+.section-title,
+.form-label {
+  color: #3E2723;
 }
 
-/* ingredient badge */
+/* ✅ smeđi primary (kao login/register/recipes) */
+.btn-primary {
+  background-color: #B08968;
+  border-color: #B08968;
+}
+.btn-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+}
+
+/* ingredient badge u istom tonu */
 .ingredient-badge {
-  border: 1px solid rgba(25, 135, 84, 0.25);
-  color: #198754;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(176, 137, 104, 0.45);
+  color: #9C6644;
   padding: 0.55rem 0.75rem;
 }
 </style>

@@ -1,9 +1,11 @@
 <template>
   <div class="login-page d-flex align-items-center justify-content-center">
-    <div class="card shadow p-5 rounded-4">
+    <div class="card shadow rounded-4">
       <div class="text-center mb-4">
         <h2 class="fw-bold brand">SmartMeal AI</h2>
-        <p class="text-muted">Plan your meals smartly and effortlessly</p>
+        <p class="text-muted">
+          Plan your meals smartly and effortlessly
+        </p>
       </div>
 
       <form @submit.prevent="register">
@@ -55,21 +57,20 @@
           {{ error }}
         </div>
 
-        <div v-if="success" class="alert alert-success py-2">
-          {{ success }}
-        </div>
-
         <button
           type="submit"
-          class="btn btn-success w-100 fw-bold mt-2"
+          class="btn btn-primary w-100 fw-bold mt-3"
           :disabled="loading"
         >
-          <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+          <span
+            v-if="loading"
+            class="spinner-border spinner-border-sm me-2"
+          ></span>
           Sign Up
         </button>
       </form>
 
-      <div class="text-center mt-3">
+      <div class="text-center mt-4">
         <small class="text-muted">
           Already have an account?
           <span class="fw-semibold register-link" @click="goLogin">
@@ -87,19 +88,19 @@ import { useRouter } from 'vue-router'
 import api from '@/services/api'
 
 const router = useRouter()
+
 const name = ref('')
 const email = ref('')
 const password = ref('')
 const password_confirmation = ref('')
 
 const error = ref('')
-const success = ref('')
 const loading = ref(false)
 
 async function register() {
   loading.value = true
   error.value = ''
-  success.value = ''
+
   try {
     await api.post('/register', {
       name: name.value,
@@ -108,7 +109,7 @@ async function register() {
       password_confirmation: password_confirmation.value
     })
 
-    success.value = 'Registration successful! You can now log in.'
+    router.push('/login')
   } catch (err) {
     console.error(err)
     error.value = 'Registration failed. Email may already be in use.'
@@ -126,33 +127,35 @@ function goLogin() {
 .login-page {
   min-height: 100vh;
   width: 100vw;
-  background: #198754;
+  background: #F5EFE6;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* ✅ JOŠ ŠIRA KARTICA */
 .card {
-  position: relative; /* važno zbog ::before */
-  width: 460px;
-  max-width: 100%;
+  position: relative;
+  width: 720px;          /* ⬅️ povećano */
+  max-width: 96%;
+  padding: 3.75rem 4rem; /* ⬅️ više prostora */
   overflow: hidden;
   background: #ffffff;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* FOOD POZADINA */
 .card::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/logosmartmeal.jpeg');
+  background-image: url('/slika.png'); /* zamijeni svojom slikom */
   background-repeat: no-repeat;
   background-position: center;
-  background-size: cover; /* umjesto fiksnog 650px */
+  background-size: cover;
   opacity: 0.25;
   z-index: 0;
 }
-
 
 .card > * {
   position: relative;
@@ -165,25 +168,41 @@ function goLogin() {
 }
 
 .brand {
-  color: #198754;
+  color: #9C6644;
+  font-size: 2.1rem;
 }
 
-.btn-success {
-  background-color: #198754;
-  border-color: #198754;
+/* BUTTON */
+.btn-primary {
+  background-color: #B08968;
+  border-color: #B08968;
+  padding: 0.8rem;
 }
 
-.btn-success:hover {
-  background-color: #157347;
-  border-color: #157347;
+.btn-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
 }
 
+/* LINK */
 .register-link {
-  color: #198754;
+  color: #9C6644;
   cursor: pointer;
 }
 
 .register-link:hover {
   text-decoration: underline;
+}
+
+/* LABELS */
+.form-label {
+  color: #3E2723;
+}
+
+/* ✅ RESPONSIVE: na mobitelu smanji padding da ne bude preveliko */
+@media (max-width: 576px) {
+  .card {
+    padding: 2.25rem 1.75rem;
+  }
 }
 </style>

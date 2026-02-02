@@ -77,30 +77,30 @@ const goProfile = () => router.push('/profile')
 
       <!-- LOADING OVERLAY -->
       <div v-if="loading" class="loading-overlay">
-        <div class="spinner-border text-success" role="status">
+        <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
 
       <!-- HEADER -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm">
+      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
         <div class="container-fluid">
           <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
 
           <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-outline-success fw-semibold" @click="goRecipes">
+            <button class="btn btn-outline-primary fw-semibold" @click="goRecipes">
               Recipes
             </button>
 
-            <button class="btn btn-outline-success fw-semibold" @click="addRecipe">
+            <button class="btn btn-outline-primary fw-semibold" @click="addRecipe">
               Add Recipe
             </button>
 
-            <button class="btn btn-outline-success fw-semibold" @click="goMealPlanner">
+            <button class="btn btn-outline-primary fw-semibold" @click="goMealPlanner">
               Meal Planner
             </button>
 
-            <button class="btn btn-outline-success fw-semibold profile-btn" @click="goProfile">
+            <button class="btn btn-outline-primary fw-semibold profile-btn" @click="goProfile">
               Profile
             </button>
           </div>
@@ -117,7 +117,7 @@ const goProfile = () => router.push('/profile')
 
       <!-- FORM -->
       <div class="card rounded-4 shadow-sm p-3 p-md-4 filter-card mb-4">
-        <h5 class="fw-bold mb-3">Your preferences</h5>
+        <h5 class="fw-bold mb-3 section-title">Your preferences</h5>
 
         <div class="row g-3 align-items-end">
           <div class="col-md-4">
@@ -140,7 +140,7 @@ const goProfile = () => router.push('/profile')
                 placeholder="e.g. vegetarian, low carb"
                 @keyup.enter="addPreference"
               />
-              <button type="button" class="btn btn-outline-success" @click="addPreference">
+              <button type="button" class="btn btn-outline-primary fw-semibold" @click="addPreference">
                 Add
               </button>
             </div>
@@ -148,7 +148,7 @@ const goProfile = () => router.push('/profile')
 
           <div class="col-md-3">
             <button
-              class="btn btn-success fw-bold w-100"
+              class="btn btn-primary fw-bold w-100"
               @click="fetchRecommendations"
               :disabled="loading"
             >
@@ -163,7 +163,7 @@ const goProfile = () => router.push('/profile')
             <span
               v-for="pref in form.preferences"
               :key="pref"
-              class="badge rounded-pill text-bg-light pref-badge"
+              class="badge rounded-pill pref-badge"
             >
               {{ pref }}
               <button class="btn-close ms-2" aria-label="Remove" @click="removePreference(pref)"></button>
@@ -182,15 +182,11 @@ const goProfile = () => router.push('/profile')
       </div>
 
       <!-- RESULTS -->
-      <div v-if="recommendations.length" class="card rounded-4 shadow-sm p-3 p-md-4">
-        <h5 class="fw-bold mb-3">Recommended recipes</h5>
+      <div v-if="recommendations.length" class="card rounded-4 shadow-sm p-3 p-md-4 result-card">
+        <h5 class="fw-bold mb-3 section-title">Recommended recipes</h5>
 
         <div class="row row-cols-1 row-cols-md-2 g-3">
-          <div
-            v-for="recipe in recommendations"
-            :key="recipe.id"
-            class="col"
-          >
+          <div v-for="recipe in recommendations" :key="recipe.id" class="col">
             <div
               class="recipe-card p-3 rounded-3 shadow-sm h-100"
               @click="router.push(`/recipes/${recipe.id}`)"
@@ -213,11 +209,11 @@ const goProfile = () => router.push('/profile')
 </template>
 
 <style scoped>
-/* full screen green background */
+/* ✅ bež background */
 .recommend-bg {
   min-height: 100vh;
   width: 100%;
-  background: #198754;
+  background: #F5EFE6;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -225,25 +221,26 @@ const goProfile = () => router.push('/profile')
   overflow-x: hidden;
 }
 
-/* central panel */
+/* panel */
 .recommend-panel {
   position: relative;
   width: 100%;
   max-width: 1100px;
   min-height: calc(100vh - 48px);
   background: #ffffff;
+  overflow: hidden;
 }
 
-/* faded logo */
+/* ✅ food pozadina */
 .recommend-panel::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/logosmartmeal.jpeg');
+  background-image: url('/slika.png');
   background-repeat: no-repeat;
-  background-position: top center;
+  background-position: center;
   background-size: cover;
-  opacity: 0.10;
+  opacity: 0.14;
   z-index: 0;
 }
 
@@ -252,7 +249,7 @@ const goProfile = () => router.push('/profile')
   z-index: 1;
 }
 
-/* loader overlay */
+/* loader */
 .loading-overlay {
   position: absolute;
   inset: 0;
@@ -264,38 +261,72 @@ const goProfile = () => router.push('/profile')
   backdrop-filter: blur(2px);
 }
 
-/* brand */
-.brand {
-  color: #198754;
+/* navbar soft */
+.custom-navbar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 0;
 }
 
-/* profile button */
-.profile-btn {
-  border-color: #6fdd8b;
-  color: #198754;
+/* brand + naslovi */
+.brand {
+  color: #9C6644;
 }
-.profile-btn:hover {
-  background-color: #6fdd8b;
-  border-color: #6fdd8b;
-  color: #fff;
+.section-title,
+.form-label {
+  color: #3E2723;
 }
 
 /* cards */
-.filter-card {
+.filter-card,
+.result-card {
   background: rgba(255, 255, 255, 0.92);
   border: 0;
 }
 
+/* ✅ smeđi primary */
+.btn-primary {
+  background-color: #B08968;
+  border-color: #B08968;
+}
+.btn-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+}
+
+/* outline primary */
+.btn-outline-primary {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+.btn-outline-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
+}
+
+/* profile button (isti kao outline-primary) */
+.profile-btn {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+.profile-btn:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
+}
+
 /* preference badge */
 .pref-badge {
-  border: 1px solid rgba(25, 135, 84, 0.25);
-  color: #198754;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(176, 137, 104, 0.45);
+  color: #9C6644;
   padding: 0.55rem 0.75rem;
 }
 
 /* recipe cards */
 .recipe-card {
-  background: #f1f8f5;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(176, 137, 104, 0.25);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -307,7 +338,7 @@ const goProfile = () => router.push('/profile')
 .recipe-title {
   display: block;
   font-size: 1rem;
-  color: #198754;
+  color: #9C6644;
 }
 .recipe-meta {
   font-size: 0.85rem;
