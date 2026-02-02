@@ -1,18 +1,18 @@
 <template>
   <div class="recipe-card card h-100 shadow-sm rounded-4">
     <div class="card-body d-flex flex-column">
-      <h5 class="card-title fw-bold brand mb-2">
+      <h5 class="card-title fw-bold recipe-title mb-2">
         {{ recipe.name }}
       </h5>
 
-      <div class="stats">
+      <div class="stats mb-3">
         <p class="card-text mb-1"><strong>Calories:</strong> {{ recipe.calories }}</p>
         <p class="card-text mb-1"><strong>Protein:</strong> {{ recipe.protein }}</p>
         <p class="card-text mb-1"><strong>Carbs:</strong> {{ recipe.carbs }}</p>
-        <p class="card-text mb-3"><strong>Fat:</strong> {{ recipe.fat }}</p>
+        <p class="card-text mb-1"><strong>Fat:</strong> {{ recipe.fat }}</p>
       </div>
 
-      <button class="btn btn-success mt-auto fw-bold w-100" @click="viewRecipe">
+      <button class="btn btn-primary mt-auto fw-bold w-100" @click="viewRecipe">
         View
       </button>
     </div>
@@ -45,15 +45,16 @@ const viewRecipe = () => {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* faded logo u pozadini kao login */
+/* blaga food pozadina kao na ostalim karticama */
 .recipe-card::before {
   content: "";
   position: absolute;
   inset: 0;
+  background-image: url('/slika.png'); /* ako već koristiš */
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
-  opacity: 0.07;
+  opacity: 0.06;
   z-index: 0;
 }
 
@@ -63,15 +64,28 @@ const viewRecipe = () => {
 }
 
 .recipe-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
 }
 
-.brand {
-  color: #198754;
+/* ✅ NASLOV – smeđi ton */
+.recipe-title {
+  color: #9C6644;
 }
 
+/* tekst */
 .stats p {
   font-size: 0.95rem;
+  color: #3E2723;
+}
+
+/* ✅ PRIMARY BUTTON – isti kao login/register */
+.btn-primary {
+  background-color: #B08968;
+  border-color: #B08968;
+}
+.btn-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
 }
 </style>

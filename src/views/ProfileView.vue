@@ -24,7 +24,6 @@ onMounted(async () => {
     const res = await api.get('/me')
     user.value = res.data
 
-    // Pretvori array u string za input
     if (Array.isArray(user.value.preferences)) {
       user.value.preferences = user.value.preferences.join(', ')
     }
@@ -45,7 +44,6 @@ async function saveProfile() {
   loading.value = true
 
   try {
-    // Pretvori string u array prije slanja
     let prefsArray = []
     if (user.value.preferences) {
       prefsArray = user.value.preferences
@@ -86,28 +84,29 @@ const logout = () => {
 
       <!-- LOADING OVERLAY -->
       <div v-if="loading" class="loading-overlay">
-        <div class="spinner-border text-success" role="status">
+        <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
 
       <!-- HEADER -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm">
+      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
         <div class="container-fluid">
           <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
 
           <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-outline-success fw-semibold" @click="goRecipes">
+            <button class="btn btn-outline-primary fw-semibold" @click="goRecipes">
               Recipes
             </button>
 
-            <button class="btn btn-outline-success fw-semibold" @click="addRecipe">
+            <button class="btn btn-outline-primary fw-semibold" @click="addRecipe">
               Add Recipe
             </button>
 
-            <button class="btn btn-outline-success fw-semibold" @click="goMealPlanner">
+            <button class="btn btn-outline-primary fw-semibold" @click="goMealPlanner">
               Meal Planner
             </button>
+
             <button class="btn btn-outline-danger fw-semibold" @click="logout">
               Logout
             </button>
@@ -132,7 +131,7 @@ const logout = () => {
 
       <!-- FORM CARD -->
       <div v-if="!loading && user" class="card rounded-4 shadow-sm p-3 p-md-4 form-card">
-        <h5 class="fw-bold mb-3">Profile settings</h5>
+        <h5 class="fw-bold mb-3 section-title">Profile settings</h5>
 
         <div class="row g-3">
           <div class="col-12">
@@ -161,7 +160,7 @@ const logout = () => {
 
         <div class="d-flex gap-2 mt-4">
           <button
-            class="btn btn-success fw-bold flex-grow-1"
+            class="btn btn-primary fw-bold flex-grow-1"
             @click="saveProfile"
             :disabled="loading"
           >
@@ -174,11 +173,11 @@ const logout = () => {
 </template>
 
 <style scoped>
-/* full screen green background */
+/* ✅ bež background kao ostale */
 .profile-bg {
   min-height: 100vh;
   width: 100%;
-  background: #198754;
+  background: #F5EFE6;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -186,25 +185,26 @@ const logout = () => {
   overflow-x: hidden;
 }
 
-/* central panel */
+/* panel */
 .profile-panel {
   position: relative;
   width: 100%;
   max-width: 900px;
   min-height: calc(100vh - 48px);
   background: #ffffff;
+  overflow: hidden;
 }
 
-/* faded logo background */
+/* ✅ food pozadina */
 .profile-panel::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/logosmartmeal.jpeg');
+  background-image: url('/slika.png');
   background-repeat: no-repeat;
-  background-position: top center;
+  background-position: center;
   background-size: cover;
-  opacity: 0.10;
+  opacity: 0.14;
   z-index: 0;
 }
 
@@ -225,14 +225,45 @@ const logout = () => {
   backdrop-filter: blur(2px);
 }
 
-/* brand */
+/* brand + naslovi */
 .brand {
-  color: #198754;
+  color: #9C6644;
+}
+.section-title,
+.form-label {
+  color: #3E2723;
 }
 
-/* form card */
+/* navbar soft */
+.custom-navbar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 0;
+}
+
+/* card */
 .form-card {
   background: rgba(255, 255, 255, 0.92);
   border: 0;
+}
+
+/* ✅ smeđi primary */
+.btn-primary {
+  background-color: #B08968;
+  border-color: #B08968;
+}
+.btn-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+}
+
+/* outline primary */
+.btn-outline-primary {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+.btn-outline-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
 }
 </style>

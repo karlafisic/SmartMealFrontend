@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onUnmounted, watch, nextTick } from 'vue'
 
 const props = defineProps({
   userId: {
@@ -15,6 +15,11 @@ const inputMessage = ref('')
 const status = ref('offline') // offline, connecting, online, error
 const messagesContainer = ref(null)
 
+// --- reconnect state ---
+let reconnectTimer = null
+let reconnectAttempts = 0
+const manuallyClosed = ref(false)
+
 // Auto-scroll to bottom directly
 const scrollToBottom = async () => {
   await nextTick()
@@ -29,59 +34,110 @@ const formatTime = () => {
   return now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0')
 }
 
+// Stable guest id (so session doesn't reset)
+const getStableGuestId = () => {
+  let id = localStorage.getItem('smartmeal_guest_id')
+  if (!id) {
+    id = `guest-${Math.floor(Math.random() * 1000000)}`
+    localStorage.setItem('smartmeal_guest_id', id)
+  }
+  return id
+}
+
+// Exponential-ish backoff reconnect
+const scheduleReconnect = () => {
+  if (!isOpen.value) return
+  if (manuallyClosed.value) return
+  if (reconnectTimer) return
+
+  const delay = Math.min(2000 * (reconnectAttempts + 1), 10000) // 2s, 4s, 6s... max 10s
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null
+    reconnectAttempts++
+    connect()
+  }, delay)
+}
+
+const clearReconnect = () => {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+}
+
 // Connect to WebSocket
 const connect = () => {
-  // Use prop userId OR generate a random guest Id if missing
-  const activeUserId = props.userId || `guest-${Math.floor(Math.random() * 10000)}`
-  
-  console.log('Connecting to WebSocket with User ID:', activeUserId) // Debug log
-  
+  clearReconnect()
+
+  const activeUserId = props.userId || getStableGuestId()
+
   status.value = 'connecting'
-  
-  // Create WebSocket - user ID is part of URL
+  manuallyClosed.value = false
+
   try {
-    socket.value = new WebSocket(`ws://127.0.0.1:8001/ws/assistant/${activeUserId}`)
-    
-    socket.value.onopen = () => {
-      console.log('WebSocket Connected!')
-      status.value = 'online'
-      messages.value.push({
-        id: Date.now(),
-        type: 'system',
-        text: 'Spojen na AI Asistenta. Kako ti mogu pomoći u kuhanju danas?',
-        time: formatTime()
-      })
-    }
-    
-    socket.value.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      handleIncomingMessage(data)
-    }
-    
-    socket.value.onclose = (event) => {
-      console.log('WebSocket Closed:', event)
-      status.value = 'offline'
+    if (socket.value) {
+      try { socket.value.close() } catch (_) {}
       socket.value = null
     }
-    
+
+    socket.value = new WebSocket(`ws://127.0.0.1:8001/ws/assistant/${activeUserId}`)
+
+    socket.value.onopen = () => {
+      status.value = 'online'
+      reconnectAttempts = 0
+
+      if (messages.value.length === 0) {
+        messages.value.push({
+          id: Date.now(),
+          type: 'system',
+          text: 'Spojen na AI Asistenta. Kako ti mogu pomoći u kuhanju danas?',
+          time: formatTime()
+        })
+        scrollToBottom()
+      }
+    }
+
+    socket.value.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        handleIncomingMessage(data)
+      } catch (e) {
+        console.error('Invalid JSON from server:', event.data)
+      }
+    }
+
+    socket.value.onclose = () => {
+      socket.value = null
+
+      if (manuallyClosed.value) {
+        status.value = 'offline'
+        return
+      }
+
+      status.value = 'offline'
+      scheduleReconnect()
+    }
+
     socket.value.onerror = (error) => {
       console.error('WebSocket error:', error)
       status.value = 'error'
+      scheduleReconnect()
     }
   } catch (e) {
     console.error('Connection failed:', e)
     status.value = 'error'
+    scheduleReconnect()
   }
 }
 
 // Handle incoming messages
 const handleIncomingMessage = (data) => {
   let text = ''
-  
+
   if (data.type === 'response') {
     text = data.content
   } else if (data.type === 'substitutions') {
-    text = `Zamjene za **${data.ingredient}**:\n`
+    text = `Zamjene za ${data.ingredient}:\n`
     data.substitutions.forEach(sub => {
       text += `• ${sub.substitute} (${sub.ratio}) - ${sub.note}\n`
     })
@@ -94,80 +150,93 @@ const handleIncomingMessage = (data) => {
   } else {
     text = JSON.stringify(data)
   }
-  
+
   messages.value.push({
     id: Date.now(),
     type: 'assistant',
-    text: text,
+    text,
     time: formatTime()
   })
-  
+
   scrollToBottom()
+}
+
+// Build short history for AI (last 10 user/assistant msgs)
+const buildHistory = () => {
+  return messages.value
+    .filter(m => m.type === 'user' || m.type === 'assistant')
+    .slice(-10)
+    .map(m => ({
+      role: m.type === 'user' ? 'user' : 'assistant',
+      content: m.text
+    }))
 }
 
 // Send message
 const sendMessage = () => {
-  if (!inputMessage.value.trim() || !socket.value || status.value !== 'online') return
-  
-  const text = inputMessage.value.trim()
-  
-  // Add user message locally
+  const raw = inputMessage.value.trim()
+  if (!raw) return
+
+  if (!socket.value || status.value !== 'online' || socket.value.readyState !== WebSocket.OPEN) {
+    status.value = 'offline'
+    scheduleReconnect()
+    return
+  }
+
   messages.value.push({
     id: Date.now(),
     type: 'user',
-    text: text,
+    text: raw,
     time: formatTime()
   })
-  
-  // Send to backend
+
   socket.value.send(JSON.stringify({
     type: 'chat',
-    content: text
+    content: raw,
+    history: buildHistory()
   }))
-  
-  inputMessage.value = ''
-  scrollToBottom()
-}
 
-// Ask for substitution specifically (helper UI maybe?)
-const askSubstitution = (ingredient) => {
-  if (!socket.value || status.value !== 'online') return
-  
-  messages.value.push({
-    id: Date.now(),
-    type: 'user',
-    text: `Zamjena za ${ingredient}`,
-    time: formatTime()
-  })
-  
-  socket.value.send(JSON.stringify({
-    type: 'substitute',
-    ingredient: ingredient
-  }))
-  
+  inputMessage.value = ''
   scrollToBottom()
 }
 
 const toggleChat = () => {
   isOpen.value = !isOpen.value
-  if (isOpen.value && (!socket.value || status.value === 'offline' || status.value === 'error')) {
-    connect()
-  } else if (isOpen.value) {
-    // Just scroll to bottom if opening
-    scrollToBottom()
+
+  if (isOpen.value) {
+    if (!socket.value || status.value === 'offline' || status.value === 'error') {
+      connect()
+    } else {
+      scrollToBottom()
+    }
+  } else {
+    manuallyClosed.value = true
+    clearReconnect()
+    if (socket.value) {
+      try { socket.value.close() } catch (_) {}
+      socket.value = null
+    }
+    status.value = 'offline'
   }
 }
 
-// Watch for userId changes - reconnect if ID changes (e.g. login)
-watch(() => props.userId, (newId) => {
-  if (newId && isOpen.value) {
-    if (socket.value) socket.value.close()
+watch(() => props.userId, () => {
+  if (isOpen.value) {
+    if (socket.value) {
+      try { socket.value.close() } catch (_) {}
+      socket.value = null
+    }
+    reconnectAttempts = 0
     connect()
   }
 })
 
 onUnmounted(() => {
-  if (socket.value) socket.value.close()
+  manuallyClosed.value = true
+  clearReconnect()
+  if (socket.value) {
+    try { socket.value.close() } catch (_) {}
+  }
 })
 </script>
 
@@ -176,7 +245,7 @@ onUnmounted(() => {
     <!-- Chat Window -->
     <div v-if="isOpen" class="chat-window shadow-lg">
       <!-- Header -->
-      <div class="chat-header d-flex justify-content-between align-items-center p-3 bg-success text-white">
+      <div class="chat-header d-flex justify-content-between align-items-center p-3">
         <div class="d-flex align-items-center gap-2">
           <span>🤖</span>
           <span class="fw-bold">AI Asistent</span>
@@ -184,57 +253,61 @@ onUnmounted(() => {
         </div>
         <button class="btn-close btn-close-white" @click="toggleChat"></button>
       </div>
-      
+
       <!-- Messages -->
       <div ref="messagesContainer" class="chat-messages p-3">
         <div v-if="status === 'connecting'" class="text-center text-muted my-3">
           Spajanje...
         </div>
+
         <div v-if="status === 'error'" class="text-center text-danger my-3">
           Greška u konekciji. Pokušaj ponovno.
           <button class="btn btn-sm btn-outline-danger mt-2" @click="connect">Ponovi</button>
         </div>
-        
-        <div 
-          v-for="msg in messages" 
-          :key="msg.id" 
+
+        <div
+          v-for="msg in messages"
+          :key="msg.id"
           class="message-wrapper mb-3"
           :class="msg.type === 'user' ? 'text-end' : 'text-start'"
         >
-          <div 
+          <div
             class="message p-2 d-inline-block text-start"
-            :class="msg.type === 'user' ? 'user-msg text-white' : 'assistant-msg bg-light'"
+            :class="msg.type === 'user' ? 'user-msg text-white' : (msg.type === 'system' ? 'system-msg' : 'assistant-msg')"
           >
             <div class="message-content" style="white-space: pre-wrap;">{{ msg.text }}</div>
             <div class="message-time">{{ msg.time }}</div>
           </div>
         </div>
       </div>
-      
+
       <!-- Input -->
-      <div class="chat-input p-3 border-top bg-white">
+      <div class="chat-input p-3 border-top">
         <form @submit.prevent="sendMessage" class="d-flex gap-2">
-          <input 
-            v-model="inputMessage" 
-            type="text" 
-            class="form-control" 
+          <input
+            v-model="inputMessage"
+            type="text"
+            class="form-control"
             placeholder="Pitaj za savjet o kuhanju..."
-            :disabled="status !== 'online'"
+            :disabled="status === 'connecting'"
           >
-          <button 
-            type="submit" 
-            class="btn btn-success"
+          <button
+            type="submit"
+            class="btn btn-primary"
             :disabled="status !== 'online'"
           >
             ➤
           </button>
         </form>
+
         <div class="mt-2 text-center" v-if="status !== 'online'">
-             <small class="text-danger" v-if="status === 'error' || status === 'offline'">Niste povezani (Status: {{status}})</small>
+          <small class="text-danger" v-if="status === 'error' || status === 'offline'">
+            Niste povezani (Status: {{ status }})
+          </small>
         </div>
       </div>
     </div>
-    
+
     <!-- Floating Button -->
     <button class="chat-toggle-btn shadow-lg" @click="toggleChat">
       <span v-if="!isOpen">💬 AI Pomoć</span>
@@ -244,7 +317,15 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* theme vars samo za ovu komponentu */
 .ai-assistant-container {
+  --bg: #F5EFE6;
+  --brown-1: #B08968;
+  --brown-2: #9C6644;
+  --text: #3E2723;
+  --panel: rgba(255, 255, 255, 0.92);
+  --border: rgba(176, 137, 104, 0.25);
+
   position: fixed;
   bottom: 30px;
   right: 30px;
@@ -253,62 +334,75 @@ onUnmounted(() => {
 }
 
 .chat-toggle-btn {
-  background: #198754;
+  background: linear-gradient(135deg, var(--brown-2), var(--brown-1));
   color: white;
   border: none;
   border-radius: 50px;
-  padding: 15px 25px;
-  font-weight: bold;
-  font-size: 16px;
+  padding: 14px 22px;
+  font-weight: 800;
+  font-size: 15px;
   cursor: pointer;
-  transition: transform 0.2s, background 0.2s;
+  transition: transform 0.2s, filter 0.2s;
 }
 
 .chat-toggle-btn:hover {
   transform: scale(1.05);
-  background: #146c43;
+  filter: brightness(0.95);
 }
 
 .chat-window {
   position: absolute;
   bottom: 70px;
   right: 0;
-  width: 350px;
-  height: 500px;
-  background: white;
-  border-radius: 12px;
+  width: 360px;
+  height: 520px;
+  background: var(--panel);
+  border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.3s ease-out;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(2px);
+  animation: slideUp 0.25s ease-out;
 }
 
+/* header */
+.chat-header {
+  background: linear-gradient(135deg, var(--brown-2), var(--brown-1));
+  color: #fff;
+}
+
+/* messages area */
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  background: #f8f9fa;
+  background: var(--bg);
 }
 
-.message-wrapper {
-  margin-bottom: 12px;
-}
-
+/* bubbles */
 .message {
-  max-width: 80%;
-  border-radius: 12px;
+  max-width: 82%;
+  border-radius: 14px;
   position: relative;
+  border: 1px solid transparent;
 }
 
 .user-msg {
-  background: #198754;
-  border-bottom-right-radius: 2px;
+  background: var(--brown-1);
+  border-bottom-right-radius: 4px;
 }
 
 .assistant-msg {
-  background: #e9ecef;
-  color: #333;
-  border-bottom-left-radius: 2px;
-  border: 1px solid #dee2e6;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.system-msg {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text);
+  border: 1px dashed rgba(176, 137, 104, 0.35);
 }
 
 .message-content {
@@ -322,6 +416,23 @@ onUnmounted(() => {
   text-align: right;
 }
 
+/* input */
+.chat-input {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* lokalno preboji “primary” tipku u smeđu */
+.btn-primary {
+  background-color: var(--brown-1);
+  border-color: var(--brown-1);
+  font-weight: 800;
+}
+.btn-primary:hover {
+  background-color: var(--brown-2);
+  border-color: var(--brown-2);
+}
+
+/* status dots */
 .status-dot {
   width: 8px;
   height: 8px;
@@ -330,17 +441,16 @@ onUnmounted(() => {
   display: inline-block;
 }
 
-.status-dot.online { background: #adff2f; box-shadow: 0 0 5px #adff2f; }
+.status-dot.online {
+  background: #B08968;
+  box-shadow: 0 0 6px rgba(176, 137, 104, 0.75);
+}
 .status-dot.connecting { background: #ffc107; }
 .status-dot.error { background: #dc3545; }
+.status-dot.offline { background: #999; }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.btn-xs {
-  padding: 2px 6px;
-  font-size: 11px;
 }
 </style>

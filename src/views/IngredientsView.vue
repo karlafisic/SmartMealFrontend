@@ -6,7 +6,7 @@ import api from '@/services/api'
 const router = useRouter()
 
 // --------------------
-// Auth (kao ostale stranice)
+// Auth
 // --------------------
 const token = localStorage.getItem('token')
 if (!token) router.push('/login')
@@ -57,7 +57,6 @@ async function addIngredient() {
 
   try {
     const res = await api.post('/ingredients', { name })
-    // Dodaj na vrh liste da se odmah vidi
     ingredients.value.unshift(res.data)
     newIngredient.value = ''
     success.value = 'Ingredient added successfully!'
@@ -77,32 +76,32 @@ async function addIngredient() {
   <div class="ing-bg d-flex align-items-center justify-content-center">
     <div class="ing-panel shadow-lg rounded-4 p-4 p-md-5">
 
-      <!-- LOADING OVERLAY (samo za add) -->
+      <!-- LOADING OVERLAY -->
       <div v-if="loading" class="loading-overlay">
-        <div class="spinner-border text-success" role="status">
+        <div class="spinner-border text-primary" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
 
       <!-- HEADER -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm">
+      <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
         <div class="container-fluid">
           <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
 
           <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-outline-success fw-semibold" @click="goRecipes">
+            <button class="btn btn-outline-primary fw-semibold" @click="goRecipes">
               Recipes
             </button>
 
-            <button class="btn btn-outline-success fw-semibold" @click="addRecipe">
+            <button class="btn btn-outline-primary fw-semibold" @click="addRecipe">
               Add Recipe
             </button>
 
-            <button class="btn btn-outline-success fw-semibold" @click="goMealPlanner">
+            <button class="btn btn-outline-primary fw-semibold" @click="goMealPlanner">
               Meal Planner
             </button>
 
-            <button class="btn btn-outline-success fw-semibold profile-btn" @click="goProfile">
+            <button class="btn btn-outline-primary fw-semibold profile-btn" @click="goProfile">
               Profile
             </button>
           </div>
@@ -117,26 +116,19 @@ async function addIngredient() {
 
       <!-- INITIAL LOADING -->
       <div v-if="initialLoading" class="text-center my-4">
-        <div class="spinner-border text-success" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
+        <div class="spinner-border text-primary"></div>
       </div>
 
       <!-- ALERTS -->
-      <div v-if="error" class="alert alert-danger py-2">
-        {{ error }}
-      </div>
-
-      <div v-if="success" class="alert alert-success py-2">
-        {{ success }}
-      </div>
+      <div v-if="error" class="alert alert-danger py-2">{{ error }}</div>
+      <div v-if="success" class="alert alert-success py-2">{{ success }}</div>
 
       <div v-if="!initialLoading">
-        <!-- ADD INGREDIENT CARD -->
+        <!-- ADD INGREDIENT -->
         <div class="card rounded-4 shadow-sm p-3 p-md-4 form-card mb-4">
-          <h5 class="fw-bold mb-3">Add Ingredient</h5>
+          <h5 class="fw-bold mb-3 section-title">Add Ingredient</h5>
 
-          <div class="row g-2 align-items-center">
+          <div class="row g-2 align-items-end">
             <div class="col-md-9">
               <label class="form-label fw-semibold">Ingredient name</label>
               <input
@@ -148,9 +140,9 @@ async function addIngredient() {
               />
             </div>
 
-            <div class="col-md-3 d-flex align-items-end">
+            <div class="col-md-3">
               <button
-                class="btn btn-success fw-bold w-100"
+                class="btn btn-primary fw-bold w-100"
                 @click="addIngredient"
                 :disabled="loading || !newIngredient.trim()"
               >
@@ -161,10 +153,10 @@ async function addIngredient() {
           </div>
         </div>
 
-        <!-- LIST CARD -->
+        <!-- LIST -->
         <div class="card rounded-4 shadow-sm p-3 p-md-4 list-card">
           <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="fw-bold mb-0">All ingredients</h5>
+            <h5 class="fw-bold mb-0 section-title">All ingredients</h5>
             <span class="badge rounded-pill count-badge">
               {{ ingredients.length }}
             </span>
@@ -192,11 +184,11 @@ async function addIngredient() {
 </template>
 
 <style scoped>
-/* full screen green background */
+/* ✅ ISTI background kao ostale stranice */
 .ing-bg {
   min-height: 100vh;
   width: 100%;
-  background: #198754;
+  background: #F5EFE6;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -204,25 +196,26 @@ async function addIngredient() {
   overflow-x: hidden;
 }
 
-/* central panel */
+/* panel – isto ponašanje kao recipes */
 .ing-panel {
   position: relative;
   width: 100%;
-  max-width: 1000px;
+  max-width: 1100px;
   min-height: calc(100vh - 48px);
   background: #ffffff;
+  overflow: hidden;
 }
 
-/* faded logo background */
+/* food pozadina */
 .ing-panel::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/logosmartmeal.jpeg');
+  background-image: url('/slika.png');
   background-repeat: no-repeat;
-  background-position: top center;
+  background-position: center;
   background-size: cover;
-  opacity: 0.10;
+  opacity: 0.14;
   z-index: 0;
 }
 
@@ -231,7 +224,7 @@ async function addIngredient() {
   z-index: 1;
 }
 
-/* loader overlay */
+/* loader */
 .loading-overlay {
   position: absolute;
   inset: 0;
@@ -245,18 +238,13 @@ async function addIngredient() {
 
 /* brand */
 .brand {
-  color: #198754;
+  color: #9C6644;
 }
 
-/* profile button */
-.profile-btn {
-  border-color: #6fdd8b;
-  color: #198754;
-}
-.profile-btn:hover {
-  background-color: #6fdd8b;
-  border-color: #6fdd8b;
-  color: #fff;
+/* navbar soft */
+.custom-navbar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 0;
 }
 
 /* cards */
@@ -266,8 +254,35 @@ async function addIngredient() {
   border: 0;
 }
 
+/* section title */
+.section-title,
+.form-label {
+  color: #3E2723;
+}
+
+/* smeđi primary */
+.btn-primary {
+  background-color: #B08968;
+  border-color: #B08968;
+}
+.btn-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+}
+
+/* outline primary */
+.btn-outline-primary {
+  color: #9C6644;
+  border-color: #9C6644;
+}
+.btn-outline-primary:hover {
+  background-color: #9C6644;
+  border-color: #9C6644;
+  color: #fff;
+}
+
 /* count badge */
 .count-badge {
-  background-color: #198754;
+  background-color: #B08968;
 }
 </style>
