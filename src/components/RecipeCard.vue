@@ -6,14 +6,14 @@
       </h5>
 
       <div class="stats mb-3">
-        <p class="card-text mb-1"><strong>Calories:</strong> {{ recipe.calories }}</p>
-        <p class="card-text mb-1"><strong>Protein:</strong> {{ recipe.protein }}</p>
-        <p class="card-text mb-1"><strong>Carbs:</strong> {{ recipe.carbs }}</p>
-        <p class="card-text mb-1"><strong>Fat:</strong> {{ recipe.fat }}</p>
+        <p class="card-text mb-1"><strong>Kalorije:</strong> {{ recipe.calories }}</p>
+        <p class="card-text mb-1"><strong>Proteini:</strong> {{ recipe.protein }}</p>
+        <p class="card-text mb-1"><strong>Ugljikohidrati:</strong> {{ recipe.carbs }}</p>
+        <p class="card-text mb-1"><strong>Masti:</strong> {{ recipe.fat }}</p>
       </div>
 
       <button class="btn btn-primary mt-auto fw-bold w-100" @click="viewRecipe">
-        View
+        Pogledaj
       </button>
     </div>
   </div>
@@ -45,12 +45,12 @@ const viewRecipe = () => {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* blaga food pozadina kao na ostalim karticama */
+/* blaga food pozadina */
 .recipe-card::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url('/slika.png'); /* ako već koristiš */
+  background-image: url('/slika.png');
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
@@ -68,18 +68,18 @@ const viewRecipe = () => {
   box-shadow: 0 16px 32px rgba(0, 0, 0, 0.12);
 }
 
-/* ✅ NASLOV – smeđi ton */
+/* naslov */
 .recipe-title {
   color: #9C6644;
 }
 
-/* tekst */
+/* tekst statistike */
 .stats p {
   font-size: 0.95rem;
   color: #3E2723;
 }
 
-/* ✅ PRIMARY BUTTON – isti kao login/register */
+/* PRIMARY BUTTON – usklađen s aplikacijom */
 .btn-primary {
   background-color: #B08968;
   border-color: #B08968;

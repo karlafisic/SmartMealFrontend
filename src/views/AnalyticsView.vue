@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 
@@ -10,6 +10,14 @@ const router = useRouter()
 const token = localStorage.getItem('token')
 if (!token) router.push('/login')
 api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
+// --------------------
+// LocalStorage keys (persist nakon refresha)
+// --------------------
+const LS_MODE = 'analytics_mode'
+const LS_DATE = 'analytics_selectedDate'
+const LS_WEEK = 'analytics_selectedWeekStart'
+const LS_MONTH = 'analytics_selectedMonth'
 
 // --------------------
 // State
@@ -43,16 +51,37 @@ const navigate = (path) => {
 function formatDate(date) {
   return new Date(date).toLocaleDateString('hr-HR')
 }
+
 const statLabelsHR = {
   calories: 'Kalorije',
   protein: 'Proteini',
   fat: 'Masti',
   carbs: 'Ugljikohidrati'
 }
-
-// funkcija koja vraća hrvatski label
 function getLabel(key) {
   return statLabelsHR[key] || key
+}
+
+// --------------------
+// Persist helpers
+// --------------------
+const loadPersisted = () => {
+  const savedMode = localStorage.getItem(LS_MODE)
+  const savedDate = localStorage.getItem(LS_DATE)
+  const savedWeek = localStorage.getItem(LS_WEEK)
+  const savedMonth = localStorage.getItem(LS_MONTH)
+
+  if (savedMode) mode.value = savedMode
+  if (savedDate) selectedDate.value = savedDate
+  if (savedWeek) selectedWeekStart.value = savedWeek
+  if (savedMonth) selectedMonth.value = savedMonth
+}
+
+const persist = () => {
+  localStorage.setItem(LS_MODE, mode.value)
+  localStorage.setItem(LS_DATE, selectedDate.value)
+  localStorage.setItem(LS_WEEK, selectedWeekStart.value)
+  localStorage.setItem(LS_MONTH, selectedMonth.value)
 }
 
 // --------------------
@@ -90,13 +119,26 @@ const fetchAnalytics = async () => {
 
     result.value = res.data
   } catch (err) {
-    error.value = 'Neuspjelo učitavanje statistike'
+    // Ako backend pošalje message, pokaži je (npr. validacija)
+    error.value =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      'Neuspjelo učitavanje statistike'
   } finally {
     loading.value = false
   }
 }
 
-onMounted(fetchAnalytics)
+onMounted(async () => {
+  loadPersisted()
+  // nakon refresha: vraća se zadnje odabrano i automatski učita analitiku
+  await fetchAnalytics()
+})
+
+// čim promijeniš bilo što, zapamti u localStorage (da ostane i nakon refresh-a)
+watch([mode, selectedDate, selectedWeekStart, selectedMonth], () => {
+  persist()
+})
 </script>
 
 <template>
@@ -117,8 +159,8 @@ onMounted(fetchAnalytics)
 
           <div class="ms-auto d-flex gap-2 align-items-center">
             <!-- Hamburger Menu Button -->
-            <button 
-              class="btn btn-outline-primary hamburger-btn" 
+            <button
+              class="btn btn-outline-primary hamburger-btn"
               type="button"
               @click="toggleMenu"
             >
@@ -252,7 +294,7 @@ onMounted(fetchAnalytics)
               <div class="col-md-3" v-for="(val, key) in day.total" :key="key">
                 <div class="stat-box small">
                   <div class="stat-value">{{ val }}</div>
-                  <div class="stat-label">{{ key }}</div>
+                  <div class="stat-label">{{ getLabel(key) }}</div>
                 </div>
               </div>
             </div>

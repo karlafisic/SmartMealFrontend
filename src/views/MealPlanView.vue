@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 import { useRouter } from 'vue-router'
 
@@ -26,25 +26,32 @@ const menuOpen = ref(false)
 const form = ref({
   date: '',
   goal: '',
-  preferences: []
+  preferences: [] // ostavljeno radi backend kompatibilnosti (šalje se prazno)
 })
 
-const preferenceInput = ref('')
+// ✅ Učitaj goal iz profila i postavi u formu (ali samo ako korisnik nije već ručno odabrao)
+const fetchProfileGoal = async () => {
+  try {
+    const res = await api.get('/profile')
+    const profileGoal = res.data?.goal
 
-// --------------------
-// Pomoćne funkcije za preference
-// --------------------
-const addPreference = () => {
-  const value = preferenceInput.value.trim()
-  if (!value) return
-  if (form.value.preferences.includes(value)) return
-
-  form.value.preferences.push(value)
-  preferenceInput.value = ''
+    if (profileGoal && !form.value.goal) {
+      form.value.goal = profileGoal
+    }
+  } catch (err) {
+    console.error('Ne mogu dohvatiti profil', err)
+  }
 }
 
-const removePreference = (pref) => {
-  form.value.preferences = form.value.preferences.filter(p => p !== pref)
+onMounted(() => {
+  fetchProfileGoal()
+})
+
+// ✅ OTVORI DETALJE RECEPTA IZ REZULTATA
+const viewRecipe = (meal) => {
+  const id = meal?.recipe?.id || meal?.recipe_id
+  if (!id) return
+  router.push(`/recipes/${id}`)
 }
 
 // --------------------
@@ -65,7 +72,7 @@ const generatePlan = async () => {
     const res = await api.post('/meal-plan', form.value)
     result.value = res.data
   } catch (err) {
-    error.value = 'Greška pri generiranju plana obroka.'
+    error.value = err?.response?.data?.message || 'Greška pri generiranju plana obroka.'
   } finally {
     loading.value = false
   }
@@ -88,8 +95,7 @@ const goMeals = () => router.push('/meals')
 const clearAll = () => {
   form.value.date = ''
   form.value.goal = ''
-  form.value.preferences = []
-  preferenceInput.value = ''
+  form.value.preferences = [] // ostaje prazno
   result.value = null
   error.value = ''
 }
@@ -117,8 +123,8 @@ const clearAll = () => {
             </button>
 
             <!-- Hamburger Menu Button -->
-            <button 
-              class="btn btn-outline-primary hamburger-btn" 
+            <button
+              class="btn btn-outline-primary hamburger-btn"
               type="button"
               @click="toggleMenu"
             >
@@ -192,41 +198,7 @@ const clearAll = () => {
             </select>
           </div>
 
-          <!-- Preferencije -->
-          <div class="col-12">
-            <label class="form-label fw-semibold">Preferencije</label>
-
-            <div class="d-flex gap-2 flex-wrap">
-              <input
-                type="text"
-                class="form-control flex-grow-1"
-                v-model="preferenceInput"
-                placeholder="Dodajte preferenciju (npr. vegetarijanski, low carb)"
-                @keyup.enter="addPreference"
-              />
-              <button type="button" class="btn btn-primary fw-bold" @click="addPreference">
-                Dodaj
-              </button>
-            </div>
-
-            <!-- Tagovi -->
-            <div class="mt-3" v-if="form.preferences.length">
-              <div class="d-flex flex-wrap gap-2">
-                <span
-                  v-for="pref in form.preferences"
-                  :key="pref"
-                  class="badge rounded-pill pref-badge"
-                >
-                  {{ pref }}
-                  <button class="btn-close ms-2" aria-label="Ukloni" @click="removePreference(pref)"></button>
-                </span>
-              </div>
-            </div>
-
-            <div v-else class="text-muted mt-2">
-              Nema dodanih preferencija.
-            </div>
-          </div>
+          <!-- ✅ Preferencije UI uklonjen (ostavljeno samo u formi kao prazno polje) -->
         </div>
 
         <div class="d-flex gap-2 mt-4 flex-wrap">
@@ -248,7 +220,16 @@ const clearAll = () => {
           <div v-for="meal in result.meals" :key="meal.id" class="col-md-6">
             <div class="meal-box p-3 rounded-3 shadow-sm">
               <div class="fw-bold text-capitalize mb-1 meal-title">{{ meal.meal_type }}</div>
-              <div class="text-muted small">ID recepta: {{ meal.recipe_id }}</div>
+
+              <div class="text-muted small">
+                {{ meal?.recipe?.name ? meal.recipe.name : ('Recept #' + meal.recipe_id) }}
+              </div>
+
+              <div class="mt-2">
+                <button class="btn btn-outline-primary fw-semibold" @click="viewRecipe(meal)">
+                  Pogledaj recept
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -456,14 +437,6 @@ const clearAll = () => {
   background-color: #9C6644;
   border-color: #9C6644;
   color: #fff;
-}
-
-/* preference badges */
-.pref-badge {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(176, 137, 104, 0.45);
-  color: #9C6644;
-  padding: 0.55rem 0.75rem;
 }
 
 /* meal boxes */

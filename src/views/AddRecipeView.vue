@@ -16,7 +16,7 @@ const prep_time = ref(null)
 // Sastojci
 const allIngredients = ref([])
 const selectedIngredients = ref([])
-const ingredientToAdd = ref(null)
+const ingredientToAdd = ref([])
 
 // Greške/loading
 const error = ref('')
@@ -42,12 +42,13 @@ const sortedIngredients = computed(() => {
 
 
 function addIngredient() {
-  if (
-    ingredientToAdd.value &&
-    !selectedIngredients.value.find(i => i.id === ingredientToAdd.value.id)
-  ) {
-    selectedIngredients.value.push(ingredientToAdd.value)
-    ingredientToAdd.value = null
+  if (ingredientToAdd.value && ingredientToAdd.value.length > 0) {
+    ingredientToAdd.value.forEach(ingredient => {
+      if (!selectedIngredients.value.find(i => i.id === ingredient.id)) {
+        selectedIngredients.value.push(ingredient)
+      }
+    })
+    ingredientToAdd.value = []
   }
 }
 
@@ -95,7 +96,7 @@ const goToRecipes = () => router.push('/recipes')
 
       <!-- LOADING -->
       <div v-if="loading" class="loading-overlay">
-        <div class="spinner-border text-primary" role="status">
+        <div class="spinner-border" role="status">
           <span class="visually-hidden">Učitavanje...</span>
         </div>
       </div>
@@ -157,19 +158,19 @@ const goToRecipes = () => router.push('/recipes')
 
       <div class="row g-2 align-items-end">
         <div class="col-md-8">
-          <select v-model="ingredientToAdd" class="form-select">
-            <option disabled :value="null">Odaberite sastojak...</option>
+          <select v-model="ingredientToAdd" class="form-select" multiple size="6">
             <option v-for="ing in sortedIngredients" :key="ing.id" :value="ing">
               {{ ing.name }}
             </option>
           </select>
+          <small class="text-muted">Drži Ctrl za odabir više sastojaka</small>
         </div>
 
         <div class="col-md-4">
           <button
             class="btn btn-primary w-100 fw-bold"
             @click="addIngredient"
-            :disabled="!ingredientToAdd"
+            :disabled="!ingredientToAdd || ingredientToAdd.length === 0"
           >
             Dodaj
           </button>
@@ -223,8 +224,8 @@ const goToRecipes = () => router.push('/recipes')
   position: relative;
   width: 100%;
   max-width: 980px;
-  max-height: 90vh;
-  padding: 2.5rem 3rem;
+  max-height: 96vh;
+  padding: 0.1rem 2rem;
   overflow: hidden;
   background: #ffffff;
   border-radius: 16px;
@@ -253,12 +254,15 @@ const goToRecipes = () => router.push('/recipes')
 
 /* BUTTONS */
 .btn-primary {
-  background-color: #B08968;
-  border-color: #B08968;
+  background-color: #9C6644 !important;
+  border-color: #9C6644 !important;
 }
-.btn-primary:hover {
-  background-color: #9C6644;
-  border-color: #9C6644;
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: #7D5436 !important;
+  border-color: #7D5436 !important;
+  box-shadow: 0 0 0 0.25rem rgba(156, 102, 68, 0.25) !important;
 }
 
 .btn-outline-secondary {
@@ -269,6 +273,19 @@ const goToRecipes = () => router.push('/recipes')
   background-color: #9C6644;
   border-color: #9C6644;
   color: #fff;
+}
+
+/* FORM CONTROLS - pregazivanje plave focus boje */
+.form-control:focus,
+.form-select:focus {
+  border-color: #9C6644 !important;
+  box-shadow: 0 0 0 0.25rem rgba(156, 102, 68, 0.25) !important;
+}
+
+/* SPINNER - smeđa boja umjesto plave */
+.spinner-border {
+  color: #9C6644 !important;
+  border-color: currentColor transparent currentColor transparent !important;
 }
 
 /* TAGS */
