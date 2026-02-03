@@ -32,10 +32,12 @@ onMounted(() => {
 })
 </script>
 
+
 <template>
   <div class="app-container">
     <router-view />
-    <AiAssistant :user-id="userId" />
+    <!-- AI pomoć samo ako je userId postavljen -->
+    <AiAssistant v-if="userId" :user-id="userId" />
   </div>
 </template>
 

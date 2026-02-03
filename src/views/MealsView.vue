@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 // --------------------
-// Auth
+// Autentikacija
 // --------------------
 const token = localStorage.getItem('token')
 if (!token) router.push('/login')
@@ -19,9 +19,10 @@ const meals = ref([])
 const recipes = ref([])
 const loading = ref(true)
 const error = ref('')
+const menuOpen = ref(false)
 
 // --------------------
-// Form
+// Forma
 // --------------------
 const form = ref({
   recipe_id: '',
@@ -42,7 +43,7 @@ const fetchMeals = async () => {
     const res = await api.get('/meals')
     meals.value = res.data
   } catch (err) {
-    error.value = 'Failed to load meals'
+    error.value = 'Greška pri učitavanju obroka'
   } finally {
     loading.value = false
   }
@@ -60,17 +61,21 @@ const addMeal = async () => {
     form.value = { recipe_id: '', date: '', meal_type: '' }
     fetchMeals()
   } catch (err) {
-    error.value = 'Failed to add meal'
+    error.value = 'Greška pri dodavanju obroka'
   }
 }
 
 // --------------------
-// Navigation
+// Menu & Navigation
 // --------------------
-const goRecipes = () => router.push('/recipes')
-const addRecipe = () => router.push('/add-recipe')
-const goProfile = () => router.push('/profile')
-const goMealPlanner = () => router.push('/meal-plan')
+const toggleMenu = () => {
+  menuOpen.value = !menuOpen.value
+}
+
+const navigate = (path) => {
+  menuOpen.value = false
+  router.push(path)
+}
 
 onMounted(async () => {
   await fetchRecipes()
@@ -82,58 +87,84 @@ onMounted(async () => {
   <div class="meals-bg d-flex align-items-center justify-content-center">
     <div class="meals-panel shadow-lg rounded-4 p-4 p-md-5">
 
-      <!-- LOADING OVERLAY -->
+      <!-- LOADER -->
       <div v-if="loading" class="loading-overlay">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">Učitavanje...</span>
         </div>
       </div>
 
-      <!-- HEADER -->
+      <!-- NAVBAR -->
       <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
         <div class="container-fluid">
           <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
 
-          <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-outline-primary fw-semibold" @click="goRecipes">
-              Recipes
-            </button>
-
-            <button class="btn btn-outline-primary fw-semibold" @click="addRecipe">
-              Add Recipe
-            </button>
-
-            <button class="btn btn-outline-primary fw-semibold" @click="goMealPlanner">
-              Meal Planner
-            </button>
-
-            <button class="btn btn-outline-primary fw-semibold profile-btn" @click="goProfile">
-              Profile
+          <div class="ms-auto d-flex gap-2 align-items-center">
+            <!-- Hamburger Menu Button -->
+            <button 
+              class="btn btn-outline-primary hamburger-btn" 
+              type="button"
+              @click="toggleMenu"
+            >
+              <span class="hamburger-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
             </button>
           </div>
         </div>
       </nav>
 
-      <!-- TITLE -->
+      <!-- Dropdown Menu -->
+      <transition name="slide-fade">
+        <div v-if="menuOpen" class="dropdown-menu-custom shadow-lg rounded-4">
+          <div class="menu-item" @click="navigate('/meal-plan')">
+            <span class="menu-icon">📅</span>
+            <span>Planer obroka</span>
+          </div>
+          <div class="menu-item" @click="navigate('/recipes')">
+            <span class="menu-icon">📖</span>
+            <span>Recepti</span>
+          </div>
+          <div class="menu-item" @click="navigate('/analytics')">
+            <span class="menu-icon">📊</span>
+            <span>Analitika</span>
+          </div>
+          <div class="menu-item" @click="navigate('/recommendations')">
+            <span class="menu-icon">⭐</span>
+            <span>Preporuke</span>
+          </div>
+          <div class="menu-item" @click="navigate('/profile')">
+            <span class="menu-icon">👤</span>
+            <span>Profil</span>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Overlay when menu is open -->
+      <div v-if="menuOpen" class="menu-overlay" @click="menuOpen = false"></div>
+
+      <!-- NASLOV -->
       <div class="mb-3">
-        <h2 class="fw-bold brand mb-1">My Meals</h2>
-        <p class="text-muted mb-0">Manage and review your planned meals.</p>
+        <h2 class="fw-bold brand mb-1">Moji obroci</h2>
+        <p class="text-muted mb-0">Upravljajte i pregledajte svoje planirane obroke.</p>
       </div>
 
-      <!-- ERROR -->
+      <!-- GREŠKA -->
       <div v-if="error" class="alert alert-danger py-2">
         {{ error }}
       </div>
 
-      <!-- ADD MEAL CARD -->
+      <!-- DODAJ OBROK CARD -->
       <div class="card rounded-4 shadow-sm p-3 p-md-4 form-card mb-4">
-        <h5 class="fw-bold mb-3 section-title">Add Meal</h5>
+        <h5 class="fw-bold mb-3 section-title">Dodaj obrok</h5>
 
         <div class="row g-3">
           <div class="col-md-5">
-            <label class="form-label fw-semibold">Recipe</label>
+            <label class="form-label fw-semibold">Recept</label>
             <select class="form-select" v-model="form.recipe_id">
-              <option disabled value="">Select recipe</option>
+              <option disabled value="">Odaberite recept</option>
               <option v-for="r in recipes" :key="r.id" :value="r.id">
                 {{ r.name }}
               </option>
@@ -141,29 +172,29 @@ onMounted(async () => {
           </div>
 
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Date</label>
+            <label class="form-label fw-semibold">Datum</label>
             <input type="date" class="form-control" v-model="form.date" />
           </div>
 
           <div class="col-md-3">
-            <label class="form-label fw-semibold">Meal type</label>
+            <label class="form-label fw-semibold">Tip obroka</label>
             <select class="form-select" v-model="form.meal_type">
-              <option value="">Optional</option>
-              <option value="breakfast">Breakfast</option>
-              <option value="lunch">Lunch</option>
-              <option value="dinner">Dinner</option>
+              <option value="">Opcionalno</option>
+              <option value="breakfast">Doručak</option>
+              <option value="lunch">Ručak</option>
+              <option value="dinner">Večera</option>
             </select>
           </div>
         </div>
 
         <div class="d-flex gap-2 mt-4">
           <button class="btn btn-primary fw-bold flex-grow-1" @click="addMeal">
-            Add meal
+            Dodaj obrok
           </button>
         </div>
       </div>
 
-      <!-- LIST -->
+      <!-- LISTA OBROKA -->
       <div v-if="!loading" class="list">
         <div
           v-for="meal in meals"
@@ -183,7 +214,7 @@ onMounted(async () => {
         </div>
 
         <p v-if="meals.length === 0" class="text-muted text-center mt-3">
-          No meals yet.
+          Još nema obroka.
         </p>
       </div>
     </div>
@@ -231,6 +262,106 @@ onMounted(async () => {
   z-index: 1;
 }
 
+/* Hamburger Button */
+.hamburger-btn {
+  padding: 8px 12px;
+  border: 2px solid #9C6644;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn:hover {
+  background-color: #9C6644;
+}
+
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 24px;
+}
+
+.hamburger-icon span {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background-color: #9C6644;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn:hover .hamburger-icon span {
+  background-color: #fff;
+}
+
+/* Dropdown Menu */
+.dropdown-menu-custom {
+  position: absolute;
+  top: 80px;
+  right: 24px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  min-width: 240px;
+  z-index: 2500;
+  overflow: hidden;
+}
+
+.menu-item {
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #3E2723;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-item:hover {
+  background-color: #F5EFE6;
+  color: #9C6644;
+}
+
+.menu-icon {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+}
+
+/* Menu Overlay */
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+}
+
+/* Slide Fade Transition */
+.slide-fade-enter-active {
+  transition: all 0.3s ease;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.slide-fade-enter-from {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
+.slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
 /* loader */
 .loading-overlay {
   position: absolute;
@@ -275,17 +406,6 @@ onMounted(async () => {
   border-color: #9C6644;
 }
 .btn-outline-primary:hover {
-  background-color: #9C6644;
-  border-color: #9C6644;
-  color: #fff;
-}
-
-/* profile button */
-.profile-btn {
-  color: #9C6644;
-  border-color: #9C6644;
-}
-.profile-btn:hover {
   background-color: #9C6644;
   border-color: #9C6644;
   color: #fff;

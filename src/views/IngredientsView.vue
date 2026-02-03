@@ -6,7 +6,7 @@ import api from '@/services/api'
 const router = useRouter()
 
 // --------------------
-// Auth
+// Autentikacija
 // --------------------
 const token = localStorage.getItem('token')
 if (!token) router.push('/login')
@@ -21,14 +21,19 @@ const error = ref('')
 const success = ref('')
 const loading = ref(false)
 const initialLoading = ref(true)
+const menuOpen = ref(false)
 
 // --------------------
-// Navigation
+// Menu & Navigation
 // --------------------
-const goRecipes = () => router.push('/recipes')
-const addRecipe = () => router.push('/add-recipe')
-const goMealPlanner = () => router.push('/meal-plan')
-const goProfile = () => router.push('/profile')
+const toggleMenu = () => {
+  menuOpen.value = !menuOpen.value
+}
+
+const navigate = (path) => {
+  menuOpen.value = false
+  router.push(path)
+}
 
 // --------------------
 // API
@@ -37,9 +42,12 @@ async function loadIngredients() {
   error.value = ''
   try {
     const res = await api.get('/ingredients')
-    ingredients.value = res.data
+    // sortiraj po abecedi
+    ingredients.value = res.data.sort((a, b) =>
+      a.name.localeCompare(b.name, 'hr')
+    )
   } catch (err) {
-    error.value = 'Failed to load ingredients'
+    error.value = 'Greška pri učitavanju sastojaka'
   } finally {
     initialLoading.value = false
   }
@@ -57,14 +65,16 @@ async function addIngredient() {
 
   try {
     const res = await api.post('/ingredients', { name })
-    ingredients.value.unshift(res.data)
+    ingredients.value.push(res.data)
+    // ponovno sortiraj po abecedi
+    ingredients.value.sort((a, b) => a.name.localeCompare(b.name, 'hr'))
     newIngredient.value = ''
-    success.value = 'Ingredient added successfully!'
+    success.value = 'Sastojak je uspješno dodan!'
   } catch (err) {
     if (err.response?.status === 422) {
-      error.value = 'Ingredient already exists'
+      error.value = 'Sastojak već postoji'
     } else {
-      error.value = 'Failed to add ingredient'
+      error.value = 'Greška pri dodavanju sastojka'
     }
   } finally {
     loading.value = false
@@ -76,42 +86,64 @@ async function addIngredient() {
   <div class="ing-bg d-flex align-items-center justify-content-center">
     <div class="ing-panel shadow-lg rounded-4 p-4 p-md-5">
 
-      <!-- LOADING OVERLAY -->
+      <!-- LOADER -->
       <div v-if="loading" class="loading-overlay">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">Učitavanje...</span>
         </div>
       </div>
 
-      <!-- HEADER -->
+      <!-- NAVBAR -->
       <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
         <div class="container-fluid">
           <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
 
-          <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-outline-primary fw-semibold" @click="goRecipes">
-              Recipes
-            </button>
-
-            <button class="btn btn-outline-primary fw-semibold" @click="addRecipe">
-              Add Recipe
-            </button>
-
-            <button class="btn btn-outline-primary fw-semibold" @click="goMealPlanner">
-              Meal Planner
-            </button>
-
-            <button class="btn btn-outline-primary fw-semibold profile-btn" @click="goProfile">
-              Profile
+          <div class="ms-auto d-flex gap-2 align-items-center">
+            <!-- Hamburger Menu Button -->
+            <button 
+              class="btn btn-outline-primary hamburger-btn" 
+              type="button"
+              @click="toggleMenu"
+            >
+              <span class="hamburger-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
             </button>
           </div>
         </div>
       </nav>
 
-      <!-- TITLE -->
+      <!-- Dropdown Menu -->
+      <transition name="slide-fade">
+        <div v-if="menuOpen" class="dropdown-menu-custom shadow-lg rounded-4">
+          <div class="menu-item" @click="navigate('/recipes')">
+            <span class="menu-icon">📖</span>
+            <span>Recepti</span>
+          </div>
+          <div class="menu-item" @click="navigate('/meal-plan')">
+            <span class="menu-icon">📅</span>
+            <span>Planer obroka</span>
+          </div>
+          <div class="menu-item" @click="navigate('/recommendations')">
+            <span class="menu-icon">⭐</span>
+            <span>Preporuke</span>
+          </div>
+          <div class="menu-item" @click="navigate('/profile')">
+            <span class="menu-icon">👤</span>
+            <span>Profil</span>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Overlay when menu is open -->
+      <div v-if="menuOpen" class="menu-overlay" @click="menuOpen = false"></div>
+
+      <!-- NASLOV -->
       <div class="mb-3">
-        <h2 class="fw-bold brand mb-1">Ingredients</h2>
-        <p class="text-muted mb-0">Add and view your ingredient list.</p>
+        <h2 class="fw-bold brand mb-1">Sastojci</h2>
+        <p class="text-muted mb-0">Dodaj i pregledaj listu sastojaka.</p>
       </div>
 
       <!-- INITIAL LOADING -->
@@ -126,15 +158,15 @@ async function addIngredient() {
       <div v-if="!initialLoading">
         <!-- ADD INGREDIENT -->
         <div class="card rounded-4 shadow-sm p-3 p-md-4 form-card mb-4">
-          <h5 class="fw-bold mb-3 section-title">Add Ingredient</h5>
+          <h5 class="fw-bold mb-3 section-title">Dodaj sastojak</h5>
 
           <div class="row g-2 align-items-end">
             <div class="col-md-9">
-              <label class="form-label fw-semibold">Ingredient name</label>
+              <label class="form-label fw-semibold">Naziv sastojka</label>
               <input
                 class="form-control"
                 v-model="newIngredient"
-                placeholder="e.g. Eggs, Flour, Ketchup"
+                placeholder="npr. Jaja, Brašno, Kečap"
                 @keyup.enter="addIngredient"
                 :disabled="loading"
               />
@@ -147,7 +179,7 @@ async function addIngredient() {
                 :disabled="loading || !newIngredient.trim()"
               >
                 <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                Add
+                Dodaj
               </button>
             </div>
           </div>
@@ -156,24 +188,23 @@ async function addIngredient() {
         <!-- LIST -->
         <div class="card rounded-4 shadow-sm p-3 p-md-4 list-card">
           <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="fw-bold mb-0 section-title">All ingredients</h5>
+            <h5 class="fw-bold mb-0 section-title">Svi sastojci</h5>
             <span class="badge rounded-pill count-badge">
               {{ ingredients.length }}
             </span>
           </div>
 
           <div v-if="ingredients.length === 0" class="text-muted text-center py-4">
-            No ingredients yet.
+            Nema još sastojaka.
           </div>
 
           <ul v-else class="list-group list-group-flush">
             <li
               v-for="ing in ingredients"
               :key="ing.id"
-              class="list-group-item d-flex align-items-center justify-content-between"
+              class="list-group-item d-flex align-items-center"
             >
               <span class="fw-semibold">{{ ing.name }}</span>
-              <span class="text-muted small">#{{ ing.id }}</span>
             </li>
           </ul>
         </div>
@@ -184,7 +215,6 @@ async function addIngredient() {
 </template>
 
 <style scoped>
-/* ✅ ISTI background kao ostale stranice */
 .ing-bg {
   min-height: 100vh;
   width: 100%;
@@ -196,7 +226,6 @@ async function addIngredient() {
   overflow-x: hidden;
 }
 
-/* panel – isto ponašanje kao recipes */
 .ing-panel {
   position: relative;
   width: 100%;
@@ -206,7 +235,6 @@ async function addIngredient() {
   overflow: hidden;
 }
 
-/* food pozadina */
 .ing-panel::before {
   content: "";
   position: absolute;
@@ -222,6 +250,106 @@ async function addIngredient() {
 .ing-panel > * {
   position: relative;
   z-index: 1;
+}
+
+/* Hamburger Button */
+.hamburger-btn {
+  padding: 8px 12px;
+  border: 2px solid #9C6644;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn:hover {
+  background-color: #9C6644;
+}
+
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 24px;
+}
+
+.hamburger-icon span {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background-color: #9C6644;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn:hover .hamburger-icon span {
+  background-color: #fff;
+}
+
+/* Dropdown Menu */
+.dropdown-menu-custom {
+  position: absolute;
+  top: 80px;
+  right: 24px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  min-width: 240px;
+  z-index: 2500;
+  overflow: hidden;
+}
+
+.menu-item {
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #3E2723;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-item:hover {
+  background-color: #F5EFE6;
+  color: #9C6644;
+}
+
+.menu-icon {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+}
+
+/* Menu Overlay */
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+}
+
+/* Slide Fade Transition */
+.slide-fade-enter-active {
+  transition: all 0.3s ease;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.slide-fade-enter-from {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
+.slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
 }
 
 /* loader */
@@ -241,20 +369,17 @@ async function addIngredient() {
   color: #9C6644;
 }
 
-/* navbar soft */
 .custom-navbar {
   background: rgba(255, 255, 255, 0.92) !important;
   border: 0;
 }
 
-/* cards */
 .form-card,
 .list-card {
   background: rgba(255, 255, 255, 0.92);
   border: 0;
 }
 
-/* section title */
 .section-title,
 .form-label {
   color: #3E2723;
@@ -270,7 +395,6 @@ async function addIngredient() {
   border-color: #9C6644;
 }
 
-/* outline primary */
 .btn-outline-primary {
   color: #9C6644;
   border-color: #9C6644;
@@ -281,7 +405,6 @@ async function addIngredient() {
   color: #fff;
 }
 
-/* count badge */
 .count-badge {
   background-color: #B08968;
 }

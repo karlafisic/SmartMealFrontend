@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://smartmeal.test/api',
+  baseURL: 'http://127.0.0.1:8000/api',
 })
 
 // Interceptor: ako postoji token u localStorage, dodaj ga u svaki zahtjev

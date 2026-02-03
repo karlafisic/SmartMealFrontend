@@ -31,17 +31,20 @@ onMounted(async () => {
 })
 
 async function deleteRecipe() {
-  if (!confirm('Are you sure you want to delete this recipe?')) return
+  if (!confirm('Jeste li sigurni da želite obrisati ovaj recept?')) return
   try {
     await api.delete(`/recipes/${recipe.value.id}`)
     router.push('/recipes')
   } catch (err) {
-    error.value = 'Failed to delete recipe'
+    error.value = 'Greška pri brisanju recepta.'
   }
 }
 
 function goToEdit() {
   router.push(`/recipes/${recipe.value.id}/edit`)
+}
+function goBackToRecipes() {
+  router.push('/recipes')
 }
 </script>
 
@@ -52,7 +55,7 @@ function goToEdit() {
       <!-- LOADING OVERLAY -->
       <div v-if="loading" class="loading-overlay">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">Učitavanje...</span>
         </div>
       </div>
 
@@ -61,20 +64,20 @@ function goToEdit() {
         <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
           <div>
             <h2 class="fw-bold brand mb-1">{{ recipe.name }}</h2>
-            <p class="text-muted mb-0">Recipe details</p>
+            <p class="text-muted mb-0">Detalji recepta</p>
           </div>
 
           <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary fw-semibold" @click="router.back()">
-              ← Back
+            <button class="btn btn-outline-secondary fw-semibold" @click="goBackToRecipes()">
+              Natrag na recepte
             </button>
 
             <button v-if="isOwner" class="btn btn-outline-primary fw-semibold" @click="goToEdit">
-              ✏️ Edit
+              Uredi
             </button>
 
             <button v-if="isOwner" class="btn btn-outline-danger fw-semibold" @click="deleteRecipe">
-              🗑 Delete
+              Obriši
             </button>
           </div>
         </div>
@@ -88,42 +91,42 @@ function goToEdit() {
         <div class="row g-3 mb-4">
           <div class="col-md-4">
             <div class="stat-card p-3 rounded-3 shadow-sm">
-              <strong>Calories</strong>
+              <strong>Kalorije</strong>
               <div class="fs-5 stat-value">{{ recipe.calories }} kcal</div>
             </div>
           </div>
 
           <div class="col-md-4">
             <div class="stat-card p-3 rounded-3 shadow-sm">
-              <strong>Protein</strong>
+              <strong>Proteini</strong>
               <div class="fs-5 stat-value">{{ recipe.protein }} g</div>
             </div>
           </div>
 
           <div class="col-md-4">
             <div class="stat-card p-3 rounded-3 shadow-sm">
-              <strong>Carbs</strong>
+              <strong>Ugljikohidrati</strong>
               <div class="fs-5 stat-value">{{ recipe.carbs }} g</div>
             </div>
           </div>
 
           <div class="col-md-4">
             <div class="stat-card p-3 rounded-3 shadow-sm">
-              <strong>Fat</strong>
+              <strong>Masti</strong>
               <div class="fs-5 stat-value">{{ recipe.fat }} g</div>
             </div>
           </div>
 
           <div class="col-md-4">
             <div class="stat-card p-3 rounded-3 shadow-sm">
-              <strong>Prep Time</strong>
+              <strong>Vrijeme pripreme</strong>
               <div class="fs-5 stat-value">{{ recipe.prep_time }} min</div>
             </div>
           </div>
         </div>
 
         <!-- INGREDIENTS -->
-        <h5 class="fw-bold mb-3 section-title">Ingredients</h5>
+        <h5 class="fw-bold mb-3 section-title">Sastojci</h5>
 
         <ul class="list-group list-group-flush">
           <li
@@ -138,7 +141,7 @@ function goToEdit() {
       </template>
 
       <div v-else-if="!loading" class="text-center text-muted">
-        Recipe not found.
+        Recept nije pronađen.
       </div>
 
     </div>
