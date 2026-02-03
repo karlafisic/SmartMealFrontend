@@ -1,5 +1,5 @@
-<script setup> 
-import { ref } from 'vue'
+<script setup>
+import { ref, onMounted } from 'vue'
 import api from '@/services/api'
 import { useRouter } from 'vue-router'
 
@@ -24,26 +24,18 @@ const menuOpen = ref(false)
 // Forma
 // --------------------
 const form = ref({
-  goal: '',
-  preferences: []
+  goal: '' // ✅ automatski iz profila
 })
 
-const preferenceInput = ref('')
-
-// --------------------
-// Preference
-// --------------------
-const addPreference = () => {
-  const value = preferenceInput.value.trim()
-  if (value && !form.value.preferences.includes(value)) {
-    form.value.preferences.push(value)
+// ✅ učitaj goal iz profila
+onMounted(async () => {
+  try {
+    const res = await api.get('/profile')
+    form.value.goal = res.data.goal || ''
+  } catch (err) {
+    console.error(err)
   }
-  preferenceInput.value = ''
-}
-
-const removePreference = (pref) => {
-  form.value.preferences = form.value.preferences.filter(p => p !== pref)
-}
+})
 
 // --------------------
 // Poziv API-ja
@@ -54,7 +46,8 @@ const fetchRecommendations = async () => {
   recommendations.value = []
 
   try {
-    const res = await api.post('/recommendations', form.value)
+    // šaljemo goal (može biti i prazno, backend onda uzme iz profila)
+    const res = await api.post('/recommendations', { goal: form.value.goal })
     recommendations.value = res.data.recommendations
   } catch (err) {
     error.value = 'Neuspjelo učitavanje preporuka'
@@ -100,9 +93,8 @@ const logout = () => {
           <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
 
           <div class="ms-auto d-flex gap-2 align-items-center">
-            <!-- Hamburger Menu Button -->
-            <button 
-              class="btn btn-outline-primary hamburger-btn" 
+            <button
+              class="btn btn-outline-primary hamburger-btn"
               type="button"
               @click="toggleMenu"
             >
@@ -149,16 +141,16 @@ const logout = () => {
       <div class="mb-3">
         <h2 class="fw-bold brand mb-1">Preporuke recepata</h2>
         <p class="text-muted mb-0">
-          Dobij personalizirane prijedloge recepata prema tvojim ciljevima i preferencijama.
+          Dobij prijedloge recepata prema tvom cilju.
         </p>
       </div>
 
       <!-- FORMA -->
       <div class="card rounded-4 shadow-sm p-3 p-md-4 filter-card mb-4">
-        <h5 class="fw-bold mb-3 section-title">Tvoje preferencije</h5>
+        <h5 class="fw-bold mb-3 section-title">Odaberi cilj</h5>
 
         <div class="row g-3 align-items-end">
-          <div class="col-md-4">
+          <div class="col-md-9">
             <label class="form-label fw-semibold">Cilj</label>
             <select v-model="form.goal" class="form-select">
               <option value="">Bez specifičnog cilja</option>
@@ -166,22 +158,6 @@ const logout = () => {
               <option value="maintenance">Održavanje</option>
               <option value="muscle_gain">Povećanje mišićne mase</option>
             </select>
-          </div>
-
-          <div class="col-md-5">
-            <label class="form-label fw-semibold">Dodaj preferenciju</label>
-            <div class="d-flex gap-2">
-              <input
-                type="text"
-                v-model="preferenceInput"
-                class="form-control"
-                placeholder="npr. vegetarijansko, low carb"
-                @keyup.enter="addPreference"
-              />
-              <button type="button" class="btn btn-outline-primary fw-semibold" @click="addPreference">
-                Dodaj
-              </button>
-            </div>
           </div>
 
           <div class="col-md-3">
@@ -195,25 +171,6 @@ const logout = () => {
           </div>
         </div>
 
-        <!-- TAGOVI -->
-        <div class="mt-3" v-if="form.preferences.length">
-          <div class="d-flex flex-wrap gap-2">
-            <span
-              v-for="pref in form.preferences"
-              :key="pref"
-              class="badge rounded-pill pref-badge"
-            >
-              {{ pref }}
-              <button class="btn-close ms-2" aria-label="Ukloni" @click="removePreference(pref)"></button>
-            </span>
-          </div>
-        </div>
-
-        <div v-else class="text-muted mt-3">
-          Još nisu dodane preferencije.
-        </div>
-
-        <!-- GREŠKA -->
         <div v-if="error" class="alert alert-danger py-2 mt-3">
           {{ error }}
         </div>
@@ -354,7 +311,7 @@ const logout = () => {
   color: #9C6644;
 }
 
-/* Logout item with red accent */
+/* Logout item */
 .logout-item:hover {
   background-color: #ffe6e6;
   color: #dc3545;
@@ -435,25 +392,6 @@ const logout = () => {
 .btn-primary:hover {
   background-color: #9C6644;
   border-color: #9C6644;
-}
-
-/* outline primary */
-.btn-outline-primary {
-  color: #9C6644;
-  border-color: #9C6644;
-}
-.btn-outline-primary:hover {
-  background-color: #9C6644;
-  border-color: #9C6644;
-  color: #fff;
-}
-
-/* preference badge */
-.pref-badge {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(176, 137, 104, 0.45);
-  color: #9C6644;
-  padding: 0.55rem 0.75rem;
 }
 
 /* recipe cards */

@@ -21,6 +21,10 @@ const loading = ref(true)
 const error = ref('')
 const menuOpen = ref(false)
 
+// ✅ EDIT state
+const editingMealId = ref(null)
+const editRecipeId = ref('')
+
 // --------------------
 // Forma
 // --------------------
@@ -33,6 +37,14 @@ const form = ref({
 // 📅 Hrvatski format datuma
 function formatDate(date) {
   return new Date(date).toLocaleDateString('hr-HR')
+}
+
+// ✅ OTVORI DETALJE RECEPTA
+const goToRecipe = (meal) => {
+  // sigurnost: ako iz nekog razloga nema recipe ili id
+  const id = meal?.recipe?.id
+  if (!id) return
+  router.push(`/recipes/${id}`)
 }
 
 // --------------------
@@ -56,12 +68,63 @@ const fetchRecipes = async () => {
 
 const addMeal = async () => {
   error.value = ''
+
+  // ✅ frontend validacije (da se ne može "prazno" dodati)
+  if (!form.value.recipe_id) {
+    error.value = 'Odaberite recept.'
+    return
+  }
+  if (!form.value.date) {
+    error.value = 'Odaberite datum.'
+    return
+  }
+  if (!form.value.meal_type) {
+    error.value = 'Odaberite tip obroka (doručak/ručak/večera).'
+    return
+  }
+
   try {
     await api.post('/meals', form.value)
     form.value = { recipe_id: '', date: '', meal_type: '' }
-    fetchMeals()
+    await fetchMeals()
   } catch (err) {
-    error.value = 'Greška pri dodavanju obroka'
+    error.value = 'Greška pri dodavanju obroka, na taj dan već postoji obrok'
+  }
+}
+
+// ✅ EDIT: start/cancel/save
+const startEdit = (meal) => {
+  editingMealId.value = meal.id
+  editRecipeId.value = meal.recipe_id
+}
+
+const cancelEdit = () => {
+  editingMealId.value = null
+  editRecipeId.value = ''
+}
+
+const saveEdit = async (mealId) => {
+  error.value = ''
+  try {
+    await api.put(`/meals/${mealId}`, { recipe_id: editRecipeId.value })
+    await fetchMeals()
+    cancelEdit()
+  } catch (err) {
+    error.value = 'Greška pri uređivanju obroka'
+  }
+}
+
+// ✅ DELETE: obriši samo taj zapis u planu
+const deleteMeal = async (mealId) => {
+  error.value = ''
+  const ok = confirm('Jeste li sigurni da želite obrisati ovaj planirani obrok?')
+  if (!ok) return
+
+  try {
+    await api.delete(`/meals/${mealId}`)
+    await fetchMeals()
+  } catch (err) {
+    error.value = 'Greška pri brisanju obroka'
   }
 }
 
@@ -101,8 +164,8 @@ onMounted(async () => {
 
           <div class="ms-auto d-flex gap-2 align-items-center">
             <!-- Hamburger Menu Button -->
-            <button 
-              class="btn btn-outline-primary hamburger-btn" 
+            <button
+              class="btn btn-outline-primary hamburger-btn"
               type="button"
               @click="toggleMenu"
             >
@@ -179,10 +242,10 @@ onMounted(async () => {
           <div class="col-md-3">
             <label class="form-label fw-semibold">Tip obroka</label>
             <select class="form-select" v-model="form.meal_type">
-              <option value="">Opcionalno</option>
-              <option value="breakfast">Doručak</option>
-              <option value="lunch">Ručak</option>
-              <option value="dinner">Večera</option>
+              <option disabled value="">Odaberite tip obroka</option>
+              <option value="doručak">Doručak</option>
+              <option value="ručak">Ručak</option>
+              <option value="večera">Večera</option>
             </select>
           </div>
         </div>
@@ -208,8 +271,51 @@ onMounted(async () => {
             </span>
           </div>
 
-          <div class="recipe-name">
+          <!-- prikaz / edit -->
+          <div v-if="editingMealId !== meal.id" class="recipe-name">
             {{ meal.recipe.name }}
+          </div>
+
+          <div v-else class="mt-2">
+            <label class="form-label fw-semibold mb-1">Promijeni recept</label>
+            <select class="form-select" v-model="editRecipeId">
+              <option disabled value="">Odaberite recept</option>
+              <option v-for="r in recipes" :key="r.id" :value="r.id">
+                {{ r.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- ✅ akcije -->
+          <div class="d-flex gap-2 mt-3 flex-wrap">
+            <!-- kad nije edit: dodaj i "Pogledaj" -->
+            <template v-if="editingMealId !== meal.id">
+              <button class="btn btn-outline-primary fw-bold" @click.stop="goToRecipe(meal)">
+                Pogledaj
+              </button>
+
+              <button class="btn btn-outline-primary fw-bold" @click.stop="startEdit(meal)">
+                Uredi
+              </button>
+
+              <button class="btn btn-outline-secondary fw-bold" @click.stop="deleteMeal(meal.id)">
+                Obriši
+              </button>
+            </template>
+
+            <!-- kad je edit -->
+            <template v-else>
+              <button
+                class="btn btn-primary fw-bold"
+                @click.stop="saveEdit(meal.id)"
+                :disabled="!editRecipeId"
+              >
+                Spremi
+              </button>
+              <button class="btn btn-outline-secondary fw-bold" @click.stop="cancelEdit">
+                Odustani
+              </button>
+            </template>
           </div>
         </div>
 

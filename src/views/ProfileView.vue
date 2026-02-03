@@ -7,8 +7,7 @@ const router = useRouter()
 const user = ref({
   name: '',
   email: '',
-  goal: '',
-  preferences: ''
+  goal: ''
 })
 const loading = ref(true)
 const error = ref('')
@@ -27,12 +26,8 @@ api.defaults.headers.common['Authorization'] = `Bearer ${token}`
 // --------------------
 onMounted(async () => {
   try {
-    const res = await api.get('/profile') // ← NOVO: /profile umjesto /me
+    const res = await api.get('/profile')
     user.value = res.data
-
-    if (Array.isArray(user.value.preferences)) {
-      user.value.preferences = user.value.preferences.join(', ')
-    }
   } catch (err) {
     console.error(err)
     router.push('/login')
@@ -50,26 +45,12 @@ async function saveProfile() {
   loading.value = true
 
   try {
-    let prefsArray = []
-    if (user.value.preferences) {
-      prefsArray = user.value.preferences
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-    }
-
     const res = await api.put('/profile', {
-      name: user.value.name,       // ← sada možemo update-ati ime
-      goal: user.value.goal,
-      preferences: prefsArray
+      name: user.value.name,
+      goal: user.value.goal || null
     })
 
-    // Update user locally nakon save
     user.value = res.data.user
-    if (Array.isArray(user.value.preferences)) {
-      user.value.preferences = user.value.preferences.join(', ')
-    }
-
     success.value = res.data.message || 'Profil je uspješno ažuriran.'
   } catch (err) {
     console.error(err)
@@ -118,9 +99,8 @@ const logout = () => {
           <span class="me-3 d-none d-lg-inline">Pozdrav, {{ user.name }}</span>
 
           <div class="ms-auto d-flex gap-2 align-items-center">
-            <!-- Hamburger Menu Button -->
-            <button 
-              class="btn btn-outline-primary hamburger-btn" 
+            <button
+              class="btn btn-outline-primary hamburger-btn"
               type="button"
               @click="toggleMenu"
             >
@@ -169,7 +149,7 @@ const logout = () => {
       <!-- NASLOV -->
       <div class="mb-3">
         <h2 class="fw-bold brand mb-1">Profil korisnika</h2>
-        <p class="text-muted mb-0">Ažurirajte svoje ime, ciljeve i preferencije.</p>
+        <p class="text-muted mb-0">Ažurirajte svoje ime i cilj.</p>
       </div>
 
       <!-- ERROR / SUCCESS -->
@@ -198,25 +178,12 @@ const logout = () => {
 
           <div class="col-12">
             <label class="form-label fw-semibold">Cilj</label>
-            <input
-              type="text"
-              class="form-control"
-              v-model="user.goal"
-              placeholder="Vaš cilj..."
-            />
-          </div>
-
-          <div class="col-12">
-            <label class="form-label fw-semibold">Preferencije (odvojene zarezom)</label>
-            <input
-              type="text"
-              class="form-control"
-              v-model="user.preferences"
-              placeholder="npr. vegetarijanac, low-carb"
-            />
-            <div class="form-text">
-              Odvojite više preferencija zarezom.
-            </div>
+            <select v-model="user.goal" class="form-select">
+              <option value="">Bez specifičnog cilja</option>
+              <option value="weight_loss">Gubitak težine</option>
+              <option value="maintenance">Održavanje</option>
+              <option value="muscle_gain">Povećanje mišićne mase</option>
+            </select>
           </div>
         </div>
 
