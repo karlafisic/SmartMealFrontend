@@ -27,11 +27,17 @@ if (token) api.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
 // Filter ingredients based on search
 const filteredIngredients = computed(() => {
-  if (!ingredientSearch.value) return allIngredients.value
-  return allIngredients.value.filter(i =>
-    i.name.toLowerCase().includes(ingredientSearch.value.toLowerCase())
+  const list = ingredientSearch.value
+    ? allIngredients.value.filter(i =>
+        i.name.toLowerCase().includes(ingredientSearch.value.toLowerCase())
+      )
+    : allIngredients.value
+
+  return [...list].sort((a, b) =>
+    a.name.localeCompare(b.name, 'hr', { sensitivity: 'base' })
   )
 })
+
 
 // Load recipe + ingredients
 onMounted(async () => {
@@ -58,11 +64,13 @@ onMounted(async () => {
   }
 })
 
+// Submit recipe update
 const submit = async () => {
   error.value = ''
   loading.value = true
 
   try {
+    // Update recipe fields
     await api.put(`/recipes/${route.params.id}`, {
       name: name.value,
       calories: Number(calories.value),
@@ -72,7 +80,8 @@ const submit = async () => {
       prep_time: Number(prep_time.value)
     })
 
-    await api.post(`/recipes/${route.params.id}/ingredients`, {
+    // Sync ingredients
+    await api.put(`/recipes/${route.params.id}/ingredients`, {
       ingredient_ids: selectedIngredientIds.value
     })
 
@@ -85,6 +94,7 @@ const submit = async () => {
   }
 }
 
+// Toggle ingredient in selection
 const toggleIngredient = (id) => {
   if (selectedIngredientIds.value.includes(id)) {
     selectedIngredientIds.value = selectedIngredientIds.value.filter(x => x !== id)
@@ -93,11 +103,29 @@ const toggleIngredient = (id) => {
   }
 }
 
+// Remove ingredient immediately from backend
+const removeIngredient = async (id) => {
+  try {
+    loading.value = true
+    await api.delete(`/recipes/${route.params.id}/ingredients`, {
+      data: { ingredient_ids: [id] } // Laravel očekuje array
+    })
+    selectedIngredientIds.value = selectedIngredientIds.value.filter(x => x !== id)
+  } catch (err) {
+    console.error(err)
+    error.value = 'Greška pri brisanju sastojka.'
+  } finally {
+    loading.value = false
+  }
+}
+
+// Helper to get ingredient name by id
 const ingredientNameById = (id) => {
   const ing = allIngredients.value.find(i => i.id === id)
   return ing ? ing.name : ''
 }
 
+// Go back
 const goBack = () => router.back()
 </script>
 
@@ -192,10 +220,13 @@ const goBack = () => router.back()
           v-for="id in selectedIngredientIds"
           :key="id"
           class="badge ingredient-badge"
-          @click="toggleIngredient(id)"
         >
           {{ ingredientNameById(id) }}
-          <button type="button" class="btn-close btn-close-white ms-1"></button>
+          <button
+            type="button"
+            class="btn-close btn-close-white ms-1"
+            @click.stop="removeIngredient(id)"
+          ></button>
         </span>
       </div>
 

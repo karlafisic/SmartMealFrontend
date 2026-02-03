@@ -149,7 +149,11 @@
         <!-- RECIPE GRID -->
         <div v-if="!loading" class="row row-cols-1 row-cols-md-3 g-4">
           <div class="col" v-for="recipe in recipes" :key="recipe.id">
-            <RecipeCard :recipe="recipe" />
+            <RecipeCard
+              :recipe="recipe"
+              :currentUserId="currentUserId"
+            />
+
           </div>
         </div>
 
@@ -178,6 +182,7 @@ function debounce(fn, delay = 400) {
 
 const router = useRouter()
 const route = useRoute()
+const currentUserId = ref(null)
 
 const recipes = ref([])
 const loading = ref(true)
@@ -252,13 +257,23 @@ onMounted(async () => {
   await Promise.all([fetchIngredients(), fetchRecipes()])
 })
 
-// Refresh preko query parametra
-onMounted(() => {
-  if (route.query.refresh) {
-    fetchRecipes()
-    router.replace({ query: {} })
+onMounted(async () => {
+  try {
+    if (isLoggedIn.value) {
+      const res = await api.get('/profile', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      currentUserId.value = res.data.id
+    }
+
+    await Promise.all([fetchIngredients(), fetchRecipes()])
+  } catch (err) {
+    console.error(err)
   }
 })
+
 
 watch(
   () => route.query.refresh,

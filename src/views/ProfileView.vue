@@ -4,7 +4,12 @@ import { useRouter } from 'vue-router'
 import api from '@/services/api'
 
 const router = useRouter()
-const user = ref(null)
+const user = ref({
+  name: '',
+  email: '',
+  goal: '',
+  preferences: ''
+})
 const loading = ref(true)
 const error = ref('')
 const success = ref('')
@@ -22,7 +27,7 @@ api.defaults.headers.common['Authorization'] = `Bearer ${token}`
 // --------------------
 onMounted(async () => {
   try {
-    const res = await api.get('/me')
+    const res = await api.get('/profile') // ← NOVO: /profile umjesto /me
     user.value = res.data
 
     if (Array.isArray(user.value.preferences)) {
@@ -54,12 +59,20 @@ async function saveProfile() {
     }
 
     const res = await api.put('/profile', {
+      name: user.value.name,       // ← sada možemo update-ati ime
       goal: user.value.goal,
       preferences: prefsArray
     })
 
+    // Update user locally nakon save
+    user.value = res.data.user
+    if (Array.isArray(user.value.preferences)) {
+      user.value.preferences = user.value.preferences.join(', ')
+    }
+
     success.value = res.data.message || 'Profil je uspješno ažuriran.'
   } catch (err) {
+    console.error(err)
     error.value = 'Greška pri ažuriranju profila'
   } finally {
     loading.value = false
@@ -101,6 +114,8 @@ const logout = () => {
       <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
         <div class="container-fluid">
           <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
+
+          <span class="me-3 d-none d-lg-inline">Pozdrav, {{ user.name }}</span>
 
           <div class="ms-auto d-flex gap-2 align-items-center">
             <!-- Hamburger Menu Button -->
@@ -154,7 +169,7 @@ const logout = () => {
       <!-- NASLOV -->
       <div class="mb-3">
         <h2 class="fw-bold brand mb-1">Profil korisnika</h2>
-        <p class="text-muted mb-0">Ažurirajte svoje ciljeve i preferencije.</p>
+        <p class="text-muted mb-0">Ažurirajte svoje ime, ciljeve i preferencije.</p>
       </div>
 
       <!-- ERROR / SUCCESS -->
@@ -171,6 +186,16 @@ const logout = () => {
         <h5 class="fw-bold mb-3 section-title">Postavke profila</h5>
 
         <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Ime</label>
+            <input
+              type="text"
+              class="form-control"
+              v-model="user.name"
+              placeholder="Vaše ime..."
+            />
+          </div>
+
           <div class="col-12">
             <label class="form-label fw-semibold">Cilj</label>
             <input
