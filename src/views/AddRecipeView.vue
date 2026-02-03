@@ -29,7 +29,7 @@ onMounted(async () => {
     allIngredients.value = res.data
   } catch (err) {
     console.error(err)
-    error.value = 'Failed to load ingredients'
+    error.value = 'Greška pri učitavanju sastojaka'
   } finally {
     loading.value = false
   }
@@ -74,7 +74,7 @@ async function submitRecipe() {
     router.push({ name: 'recipes', query: { refresh: true } })
   } catch (err) {
     console.error(err)
-    error.value = 'Failed to add recipe'
+    error.value = 'Greška pri dodavanju recepta'
   } finally {
     loading.value = false
   }
@@ -90,19 +90,19 @@ const goToRecipes = () => router.push('/recipes')
       <!-- LOADING -->
       <div v-if="loading" class="loading-overlay">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">Učitavanje...</span>
         </div>
       </div>
 
       <!-- HEADER -->
       <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
-          <h2 class="fw-bold brand mb-1">Add Recipe</h2>
-          <p class="text-muted mb-0">Create a new SmartMeal recipe.</p>
+          <h2 class="fw-bold brand mb-1">Dodaj recept</h2>
+          <p class="text-muted mb-0">Kreiraj novi SmartMeal recept.</p>
         </div>
 
-        <button class="btn btn-outline-primary fw-semibold" @click="goToRecipes">
-          Back
+        <button class="btn btn-outline-secondary fw-semibold" @click="goToRecipes">
+          ← Natrag
         </button>
       </div>
 
@@ -114,32 +114,32 @@ const goToRecipes = () => router.push('/recipes')
       <!-- FORM -->
       <div class="row g-3">
         <div class="col-12">
-          <label class="form-label fw-semibold">Name</label>
+          <label class="form-label fw-semibold">Naziv</label>
           <input v-model="name" type="text" class="form-control" />
         </div>
 
         <div class="col-md-4">
-          <label class="form-label fw-semibold">Calories</label>
+          <label class="form-label fw-semibold">Kalorije</label>
           <input v-model.number="calories" type="number" class="form-control" />
         </div>
 
         <div class="col-md-4">
-          <label class="form-label fw-semibold">Protein</label>
+          <label class="form-label fw-semibold">Proteini</label>
           <input v-model.number="protein" type="number" class="form-control" />
         </div>
 
         <div class="col-md-4">
-          <label class="form-label fw-semibold">Carbs</label>
+          <label class="form-label fw-semibold">Ugljikohidrati</label>
           <input v-model.number="carbs" type="number" class="form-control" />
         </div>
 
         <div class="col-md-4">
-          <label class="form-label fw-semibold">Fat</label>
+          <label class="form-label fw-semibold">Masti</label>
           <input v-model.number="fat" type="number" class="form-control" />
         </div>
 
         <div class="col-md-4">
-          <label class="form-label fw-semibold">Prep Time</label>
+          <label class="form-label fw-semibold">Vrijeme pripreme (min)</label>
           <input v-model.number="prep_time" type="number" class="form-control" />
         </div>
       </div>
@@ -147,12 +147,12 @@ const goToRecipes = () => router.push('/recipes')
       <hr class="my-3" />
 
       <!-- INGREDIENTS -->
-      <h6 class="fw-bold mb-2 section-title">Ingredients</h6>
+      <h6 class="fw-bold mb-2 section-title">Sastojci</h6>
 
       <div class="row g-2 align-items-end">
         <div class="col-md-8">
           <select v-model="ingredientToAdd" class="form-select">
-            <option disabled :value="null">Choose ingredient...</option>
+            <option disabled :value="null">Odaberite sastojak...</option>
             <option v-for="ing in allIngredients" :key="ing.id" :value="ing">
               {{ ing.name }}
             </option>
@@ -165,7 +165,7 @@ const goToRecipes = () => router.push('/recipes')
             @click="addIngredient"
             :disabled="!ingredientToAdd"
           >
-            Add
+            Dodaj
           </button>
         </div>
       </div>
@@ -190,11 +190,11 @@ const goToRecipes = () => router.push('/recipes')
           @click="submitRecipe"
           :disabled="loading || !name"
         >
-          Submit
+          Spremi
         </button>
 
         <button class="btn btn-outline-secondary fw-bold" @click="goToRecipes">
-          Cancel
+          Odustani
         </button>
       </div>
     </div>
@@ -212,18 +212,18 @@ const goToRecipes = () => router.push('/recipes')
   padding: 16px;
 }
 
-/* ✅ MANJI PANEL */
+/* PANEL */
 .add-panel {
   position: relative;
   width: 100%;
-  max-width: 980px;          /* ⬅️ smanjena širina */
-  max-height: 90vh;          /* ⬅️ stane bez scrolla */
-  padding: 2.5rem 3rem;      /* ⬅️ manji padding */
+  max-width: 980px;
+  max-height: 90vh;
+  padding: 2.5rem 3rem;
   overflow: hidden;
   background: #ffffff;
+  border-radius: 16px;
 }
 
-/* food pozadina */
 .add-panel::before {
   content: "";
   position: absolute;
@@ -240,45 +240,43 @@ const goToRecipes = () => router.push('/recipes')
   z-index: 1;
 }
 
-.brand {
-  color: #9C6644;
-}
-
+/* TITLES */
+.brand { color: #9C6644; }
 .section-title,
-.form-label {
-  color: #3E2723;
-}
+.form-label { color: #3E2723; }
 
-/* smeđi primary */
+/* BUTTONS */
 .btn-primary {
   background-color: #B08968;
   border-color: #B08968;
 }
-
 .btn-primary:hover {
   background-color: #9C6644;
   border-color: #9C6644;
 }
 
-.btn-outline-primary {
+.btn-outline-secondary {
   color: #9C6644;
   border-color: #9C6644;
 }
-
-.btn-outline-primary:hover {
+.btn-outline-secondary:hover {
   background-color: #9C6644;
   border-color: #9C6644;
   color: #fff;
 }
 
+/* TAGS */
 .ingredient-badge {
   background: rgba(255,255,255,0.9);
   border: 1px solid rgba(176,137,104,0.45);
   color: #9C6644;
   padding: 0.45rem 0.7rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
-/* loader */
+/* LOADER */
 .loading-overlay {
   position: absolute;
   inset: 0;

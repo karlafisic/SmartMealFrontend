@@ -8,23 +8,23 @@
 
       <form @submit.prevent="login">
         <div class="mb-4">
-          <label class="form-label fw-semibold">Email</label>
+          <label class="form-label fw-semibold">Korisničko ime</label>
           <input
             type="email"
             v-model="email"
             class="form-control"
-            placeholder="Enter your email"
+            placeholder="Upišite Vašu email adresu"
             required
           />
         </div>
 
         <div class="mb-4">
-          <label class="form-label fw-semibold">Password</label>
+          <label class="form-label fw-semibold">Lozinka</label>
           <input
             type="password"
             v-model="password"
             class="form-control"
-            placeholder="Enter your password"
+            placeholder="Upišite Vašu lozinku"
             required
           />
         </div>
@@ -46,15 +46,15 @@
             v-if="loading"
             class="spinner-border spinner-border-sm me-2"
           ></span>
-          Sign In
+          Prijavite se
         </button>
       </form>
 
       <div class="text-center mt-5">
         <small class="text-muted">
-          Don’t have an account?
+          Nemate račun?
           <span class="fw-semibold register-link" @click="goRegister">
-            Sign Up
+            Registrirajte se.
           </span>
         </small>
       </div>
@@ -87,14 +87,14 @@ async function login() {
     })
 
     localStorage.setItem('token', res.data.token)
-    success.value = 'Login successful! Redirecting...'
+    success.value = 'Uspješna prijava! Preusmjeravanje...'
     setTimeout(() => router.push('/recipes'), 1000)
 
   } catch (err) {
     error.value =
       err.response?.status === 401
-        ? 'Invalid credentials. Please check your email and password.'
-        : 'Login failed. Please try again.'
+        ? 'Netočni podaci. Molimo provjerite Vašu email adresu i lozinku.'
+        : 'Neuspješna prijava. Pokušajte ponovno.'
   } finally {
     loading.value = false
   }

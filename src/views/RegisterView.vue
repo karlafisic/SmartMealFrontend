@@ -10,45 +10,45 @@
 
       <form @submit.prevent="register">
         <div class="mb-3">
-          <label class="form-label fw-semibold">Name</label>
+          <label class="form-label fw-semibold">Ime</label>
           <input
             type="text"
             v-model="name"
             class="form-control"
-            placeholder="Enter your name"
+            placeholder="Upišite Vaše ime"
             required
           />
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold">Email</label>
+          <label class="form-label fw-semibold">Email adresa</label>
           <input
             type="email"
             v-model="email"
             class="form-control"
-            placeholder="Enter your email"
+            placeholder="Upišite Vašu email adresu"
             required
           />
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold">Password</label>
+          <label class="form-label fw-semibold">Lozinka</label>
           <input
             type="password"
             v-model="password"
             class="form-control"
-            placeholder="Enter your password"
+            placeholder="Upišite Vašu lozinku"
             required
           />
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold">Confirm Password</label>
+          <label class="form-label fw-semibold">Potvrda lozinke</label>
           <input
             type="password"
             v-model="password_confirmation"
             class="form-control"
-            placeholder="Confirm your password"
+            placeholder="Potvrdite svoju lozinku"
             required
           />
         </div>
@@ -66,15 +66,15 @@
             v-if="loading"
             class="spinner-border spinner-border-sm me-2"
           ></span>
-          Sign Up
+          Registrirajte se
         </button>
       </form>
 
       <div class="text-center mt-4">
         <small class="text-muted">
-          Already have an account?
+          Već imate račun?
           <span class="fw-semibold register-link" @click="goLogin">
-            Sign In
+            Prijavite se.
           </span>
         </small>
       </div>

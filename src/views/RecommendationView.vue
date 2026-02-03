@@ -1,4 +1,4 @@
-<script setup>
+<script setup> 
 import { ref } from 'vue'
 import api from '@/services/api'
 import { useRouter } from 'vue-router'
@@ -6,21 +6,22 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 // --------------------
-// Auth
+// Autentikacija
 // --------------------
 const token = localStorage.getItem('token')
 if (!token) router.push('/login')
 api.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
 // --------------------
-// State
+// Stanje
 // --------------------
 const loading = ref(false)
 const error = ref('')
 const recommendations = ref([])
+const menuOpen = ref(false)
 
 // --------------------
-// Form
+// Forma
 // --------------------
 const form = ref({
   goal: '',
@@ -30,7 +31,7 @@ const form = ref({
 const preferenceInput = ref('')
 
 // --------------------
-// Preferences
+// Preference
 // --------------------
 const addPreference = () => {
   const value = preferenceInput.value.trim()
@@ -45,7 +46,7 @@ const removePreference = (pref) => {
 }
 
 // --------------------
-// API call
+// Poziv API-ja
 // --------------------
 const fetchRecommendations = async () => {
   loading.value = true
@@ -56,19 +57,30 @@ const fetchRecommendations = async () => {
     const res = await api.post('/recommendations', form.value)
     recommendations.value = res.data.recommendations
   } catch (err) {
-    error.value = 'Failed to load recommendations'
+    error.value = 'Neuspjelo učitavanje preporuka'
   } finally {
     loading.value = false
   }
 }
 
 // --------------------
-// Navigation
+// Menu & Navigation
 // --------------------
-const goRecipes = () => router.push('/recipes')
-const addRecipe = () => router.push('/add-recipe')
-const goMealPlanner = () => router.push('/meal-plan')
-const goProfile = () => router.push('/profile')
+const toggleMenu = () => {
+  menuOpen.value = !menuOpen.value
+}
+
+const navigate = (path) => {
+  menuOpen.value = false
+  router.push(path)
+}
+
+const logout = () => {
+  menuOpen.value = false
+  localStorage.removeItem('token')
+  delete api.defaults.headers.common['Authorization']
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -78,7 +90,7 @@ const goProfile = () => router.push('/profile')
       <!-- LOADING OVERLAY -->
       <div v-if="loading" class="loading-overlay">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">Učitavanje...</span>
         </div>
       </div>
 
@@ -87,61 +99,87 @@ const goProfile = () => router.push('/profile')
         <div class="container-fluid">
           <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
 
-          <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-outline-primary fw-semibold" @click="goRecipes">
-              Recipes
-            </button>
-
-            <button class="btn btn-outline-primary fw-semibold" @click="addRecipe">
-              Add Recipe
-            </button>
-
-            <button class="btn btn-outline-primary fw-semibold" @click="goMealPlanner">
-              Meal Planner
-            </button>
-
-            <button class="btn btn-outline-primary fw-semibold profile-btn" @click="goProfile">
-              Profile
+          <div class="ms-auto d-flex gap-2 align-items-center">
+            <!-- Hamburger Menu Button -->
+            <button 
+              class="btn btn-outline-primary hamburger-btn" 
+              type="button"
+              @click="toggleMenu"
+            >
+              <span class="hamburger-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
             </button>
           </div>
         </div>
       </nav>
 
-      <!-- TITLE -->
+      <!-- Dropdown Menu -->
+      <transition name="slide-fade">
+        <div v-if="menuOpen" class="dropdown-menu-custom shadow-lg rounded-4">
+          <div class="menu-item" @click="navigate('/analytics')">
+            <span class="menu-icon">📊</span>
+            <span>Analitika</span>
+          </div>
+          <div class="menu-item" @click="navigate('/meal-plan')">
+            <span class="menu-icon">📅</span>
+            <span>Planer obroka</span>
+          </div>
+          <div class="menu-item" @click="navigate('/recipes')">
+            <span class="menu-icon">📖</span>
+            <span>Recepti</span>
+          </div>
+          <div class="menu-item" @click="navigate('/profile')">
+            <span class="menu-icon">👤</span>
+            <span>Profil</span>
+          </div>
+          <div class="menu-item logout-item" @click="logout">
+            <span class="menu-icon">🚪</span>
+            <span>Odjava</span>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Overlay when menu is open -->
+      <div v-if="menuOpen" class="menu-overlay" @click="menuOpen = false"></div>
+
+      <!-- NASLOV -->
       <div class="mb-3">
-        <h2 class="fw-bold brand mb-1">Recipe Recommendations</h2>
+        <h2 class="fw-bold brand mb-1">Preporuke recepata</h2>
         <p class="text-muted mb-0">
-          Get personalized recipe suggestions based on your goals and preferences.
+          Dobij personalizirane prijedloge recepata prema tvojim ciljevima i preferencijama.
         </p>
       </div>
 
-      <!-- FORM -->
+      <!-- FORMA -->
       <div class="card rounded-4 shadow-sm p-3 p-md-4 filter-card mb-4">
-        <h5 class="fw-bold mb-3 section-title">Your preferences</h5>
+        <h5 class="fw-bold mb-3 section-title">Tvoje preferencije</h5>
 
         <div class="row g-3 align-items-end">
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Goal</label>
+            <label class="form-label fw-semibold">Cilj</label>
             <select v-model="form.goal" class="form-select">
-              <option value="">No specific goal</option>
-              <option value="weight_loss">Weight loss</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="muscle_gain">Muscle gain</option>
+              <option value="">Bez specifičnog cilja</option>
+              <option value="weight_loss">Gubitak težine</option>
+              <option value="maintenance">Održavanje</option>
+              <option value="muscle_gain">Povećanje mišićne mase</option>
             </select>
           </div>
 
           <div class="col-md-5">
-            <label class="form-label fw-semibold">Add preference</label>
+            <label class="form-label fw-semibold">Dodaj preferenciju</label>
             <div class="d-flex gap-2">
               <input
                 type="text"
                 v-model="preferenceInput"
                 class="form-control"
-                placeholder="e.g. vegetarian, low carb"
+                placeholder="npr. vegetarijansko, low carb"
                 @keyup.enter="addPreference"
               />
               <button type="button" class="btn btn-outline-primary fw-semibold" @click="addPreference">
-                Add
+                Dodaj
               </button>
             </div>
           </div>
@@ -152,12 +190,12 @@ const goProfile = () => router.push('/profile')
               @click="fetchRecommendations"
               :disabled="loading"
             >
-              {{ loading ? 'Loading…' : 'Get recommendations' }}
+              {{ loading ? 'Učitavanje…' : 'Dohvati preporuke' }}
             </button>
           </div>
         </div>
 
-        <!-- TAGS -->
+        <!-- TAGOVI -->
         <div class="mt-3" v-if="form.preferences.length">
           <div class="d-flex flex-wrap gap-2">
             <span
@@ -166,24 +204,24 @@ const goProfile = () => router.push('/profile')
               class="badge rounded-pill pref-badge"
             >
               {{ pref }}
-              <button class="btn-close ms-2" aria-label="Remove" @click="removePreference(pref)"></button>
+              <button class="btn-close ms-2" aria-label="Ukloni" @click="removePreference(pref)"></button>
             </span>
           </div>
         </div>
 
         <div v-else class="text-muted mt-3">
-          No preferences added yet.
+          Još nisu dodane preferencije.
         </div>
 
-        <!-- ERROR -->
+        <!-- GREŠKA -->
         <div v-if="error" class="alert alert-danger py-2 mt-3">
           {{ error }}
         </div>
       </div>
 
-      <!-- RESULTS -->
+      <!-- REZULTATI -->
       <div v-if="recommendations.length" class="card rounded-4 shadow-sm p-3 p-md-4 result-card">
-        <h5 class="fw-bold mb-3 section-title">Recommended recipes</h5>
+        <h5 class="fw-bold mb-3 section-title">Preporučeni recepti</h5>
 
         <div class="row row-cols-1 row-cols-md-2 g-3">
           <div v-for="recipe in recommendations" :key="recipe.id" class="col">
@@ -193,7 +231,7 @@ const goProfile = () => router.push('/profile')
             >
               <strong class="recipe-title">{{ recipe.name }}</strong>
               <div class="recipe-meta">
-                {{ recipe.calories }} kcal • {{ recipe.protein }}g protein
+                {{ recipe.calories }} kcal • {{ recipe.protein }}g proteina
               </div>
             </div>
           </div>
@@ -201,7 +239,7 @@ const goProfile = () => router.push('/profile')
       </div>
 
       <p v-if="!loading && recommendations.length === 0 && !error" class="text-muted text-center">
-        No recommendations yet.
+        Još nema preporuka.
       </p>
 
     </div>
@@ -247,6 +285,112 @@ const goProfile = () => router.push('/profile')
 .recommend-panel > * {
   position: relative;
   z-index: 1;
+}
+
+/* Hamburger Button */
+.hamburger-btn {
+  padding: 8px 12px;
+  border: 2px solid #9C6644;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn:hover {
+  background-color: #9C6644;
+}
+
+.hamburger-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 24px;
+}
+
+.hamburger-icon span {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background-color: #9C6644;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn:hover .hamburger-icon span {
+  background-color: #fff;
+}
+
+/* Dropdown Menu */
+.dropdown-menu-custom {
+  position: absolute;
+  top: 80px;
+  right: 24px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  min-width: 240px;
+  z-index: 2500;
+  overflow: hidden;
+}
+
+.menu-item {
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #3E2723;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-item:hover {
+  background-color: #F5EFE6;
+  color: #9C6644;
+}
+
+/* Logout item with red accent */
+.logout-item:hover {
+  background-color: #ffe6e6;
+  color: #dc3545;
+}
+
+.menu-icon {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+}
+
+/* Menu Overlay */
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+}
+
+/* Slide Fade Transition */
+.slide-fade-enter-active {
+  transition: all 0.3s ease;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.slide-fade-enter-from {
+  transform: translateY(-10px);
+  opacity: 0;
+}
+
+.slide-fade-leave-to {
+  transform: translateY(-10px);
+  opacity: 0;
 }
 
 /* loader */
@@ -299,17 +443,6 @@ const goProfile = () => router.push('/profile')
   border-color: #9C6644;
 }
 .btn-outline-primary:hover {
-  background-color: #9C6644;
-  border-color: #9C6644;
-  color: #fff;
-}
-
-/* profile button (isti kao outline-primary) */
-.profile-btn {
-  color: #9C6644;
-  border-color: #9C6644;
-}
-.profile-btn:hover {
   background-color: #9C6644;
   border-color: #9C6644;
   color: #fff;

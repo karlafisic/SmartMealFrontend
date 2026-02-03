@@ -1,247 +1,5 @@
-<script setup>
-import { ref, onUnmounted, watch, nextTick } from 'vue'
-
-const props = defineProps({
-  userId: {
-    type: [Number, String],
-    default: null
-  }
-})
-
-const isOpen = ref(false)
-const socket = ref(null)
-const messages = ref([])
-const inputMessage = ref('')
-const status = ref('offline') // offline, connecting, online, error
-const messagesContainer = ref(null)
-
-// --- reconnect state ---
-let reconnectTimer = null
-let reconnectAttempts = 0
-const manuallyClosed = ref(false)
-
-// Auto-scroll to bottom directly
-const scrollToBottom = async () => {
-  await nextTick()
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-  }
-}
-
-// Format time
-const formatTime = () => {
-  const now = new Date()
-  return now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0')
-}
-
-// Stable guest id (so session doesn't reset)
-const getStableGuestId = () => {
-  let id = localStorage.getItem('smartmeal_guest_id')
-  if (!id) {
-    id = `guest-${Math.floor(Math.random() * 1000000)}`
-    localStorage.setItem('smartmeal_guest_id', id)
-  }
-  return id
-}
-
-// Exponential-ish backoff reconnect
-const scheduleReconnect = () => {
-  if (!isOpen.value) return
-  if (manuallyClosed.value) return
-  if (reconnectTimer) return
-
-  const delay = Math.min(2000 * (reconnectAttempts + 1), 10000) // 2s, 4s, 6s... max 10s
-  reconnectTimer = setTimeout(() => {
-    reconnectTimer = null
-    reconnectAttempts++
-    connect()
-  }, delay)
-}
-
-const clearReconnect = () => {
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer)
-    reconnectTimer = null
-  }
-}
-
-// Connect to WebSocket
-const connect = () => {
-  clearReconnect()
-
-  const activeUserId = props.userId || getStableGuestId()
-
-  status.value = 'connecting'
-  manuallyClosed.value = false
-
-  try {
-    if (socket.value) {
-      try { socket.value.close() } catch (_) {}
-      socket.value = null
-    }
-
-    socket.value = new WebSocket(`ws://127.0.0.1:8001/ws/assistant/${activeUserId}`)
-
-    socket.value.onopen = () => {
-      status.value = 'online'
-      reconnectAttempts = 0
-
-      if (messages.value.length === 0) {
-        messages.value.push({
-          id: Date.now(),
-          type: 'system',
-          text: 'Spojen na AI Asistenta. Kako ti mogu pomoći u kuhanju danas?',
-          time: formatTime()
-        })
-        scrollToBottom()
-      }
-    }
-
-    socket.value.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        handleIncomingMessage(data)
-      } catch (e) {
-        console.error('Invalid JSON from server:', event.data)
-      }
-    }
-
-    socket.value.onclose = () => {
-      socket.value = null
-
-      if (manuallyClosed.value) {
-        status.value = 'offline'
-        return
-      }
-
-      status.value = 'offline'
-      scheduleReconnect()
-    }
-
-    socket.value.onerror = (error) => {
-      console.error('WebSocket error:', error)
-      status.value = 'error'
-      scheduleReconnect()
-    }
-  } catch (e) {
-    console.error('Connection failed:', e)
-    status.value = 'error'
-    scheduleReconnect()
-  }
-}
-
-// Handle incoming messages
-const handleIncomingMessage = (data) => {
-  let text = ''
-
-  if (data.type === 'response') {
-    text = data.content
-  } else if (data.type === 'substitutions') {
-    text = `Zamjene za ${data.ingredient}:\n`
-    data.substitutions.forEach(sub => {
-      text += `• ${sub.substitute} (${sub.ratio}) - ${sub.note}\n`
-    })
-  } else if (data.type === 'recipe_started') {
-    text = data.message
-  } else if (data.type === 'step') {
-    text = `Korak ${data.step_number}/${data.total_steps}:\n${data.instruction}`
-  } else if (data.type === 'recipe_complete') {
-    text = data.message
-  } else {
-    text = JSON.stringify(data)
-  }
-
-  messages.value.push({
-    id: Date.now(),
-    type: 'assistant',
-    text,
-    time: formatTime()
-  })
-
-  scrollToBottom()
-}
-
-// Build short history for AI (last 10 user/assistant msgs)
-const buildHistory = () => {
-  return messages.value
-    .filter(m => m.type === 'user' || m.type === 'assistant')
-    .slice(-10)
-    .map(m => ({
-      role: m.type === 'user' ? 'user' : 'assistant',
-      content: m.text
-    }))
-}
-
-// Send message
-const sendMessage = () => {
-  const raw = inputMessage.value.trim()
-  if (!raw) return
-
-  if (!socket.value || status.value !== 'online' || socket.value.readyState !== WebSocket.OPEN) {
-    status.value = 'offline'
-    scheduleReconnect()
-    return
-  }
-
-  messages.value.push({
-    id: Date.now(),
-    type: 'user',
-    text: raw,
-    time: formatTime()
-  })
-
-  socket.value.send(JSON.stringify({
-    type: 'chat',
-    content: raw,
-    history: buildHistory()
-  }))
-
-  inputMessage.value = ''
-  scrollToBottom()
-}
-
-const toggleChat = () => {
-  isOpen.value = !isOpen.value
-
-  if (isOpen.value) {
-    if (!socket.value || status.value === 'offline' || status.value === 'error') {
-      connect()
-    } else {
-      scrollToBottom()
-    }
-  } else {
-    manuallyClosed.value = true
-    clearReconnect()
-    if (socket.value) {
-      try { socket.value.close() } catch (_) {}
-      socket.value = null
-    }
-    status.value = 'offline'
-  }
-}
-
-watch(() => props.userId, () => {
-  if (isOpen.value) {
-    if (socket.value) {
-      try { socket.value.close() } catch (_) {}
-      socket.value = null
-    }
-    reconnectAttempts = 0
-    connect()
-  }
-})
-
-onUnmounted(() => {
-  manuallyClosed.value = true
-  clearReconnect()
-  if (socket.value) {
-    try { socket.value.close() } catch (_) {}
-  }
-})
-</script>
-
 <template>
-  <div class="ai-assistant-container">
+  <div v-if="userId" class="ai-assistant-container">
     <!-- Chat Window -->
     <div v-if="isOpen" class="chat-window shadow-lg">
       <!-- Header -->
@@ -259,7 +17,6 @@ onUnmounted(() => {
         <div v-if="status === 'connecting'" class="text-center text-muted my-3">
           Spajanje...
         </div>
-
         <div v-if="status === 'error'" class="text-center text-danger my-3">
           Greška u konekciji. Pokušaj ponovno.
           <button class="btn btn-sm btn-outline-danger mt-2" @click="connect">Ponovi</button>
@@ -290,16 +47,9 @@ onUnmounted(() => {
             class="form-control"
             placeholder="Pitaj za savjet o kuhanju..."
             :disabled="status === 'connecting'"
-          >
-          <button
-            type="submit"
-            class="btn btn-primary"
-            :disabled="status !== 'online'"
-          >
-            ➤
-          </button>
+          />
+          <button type="submit" class="btn btn-primary" :disabled="status !== 'online'">➤</button>
         </form>
-
         <div class="mt-2 text-center" v-if="status !== 'online'">
           <small class="text-danger" v-if="status === 'error' || status === 'offline'">
             Niste povezani (Status: {{ status }})
@@ -315,6 +65,105 @@ onUnmounted(() => {
     </button>
   </div>
 </template>
+
+<script setup>
+import { ref, onUnmounted, watch, nextTick } from 'vue'
+
+const props = defineProps({
+  userId: { type: [Number, String], default: null }
+})
+
+const isOpen = ref(false)
+const socket = ref(null)
+const messages = ref([])
+const inputMessage = ref('')
+const status = ref('offline')
+const messagesContainer = ref(null)
+
+let reconnectTimer = null
+let reconnectAttempts = 0
+const manuallyClosed = ref(false)
+
+const scrollToBottom = async () => {
+  await nextTick()
+  if (messagesContainer.value) messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+}
+
+const formatTime = () => {
+  const now = new Date()
+  return now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0')
+}
+
+const scheduleReconnect = () => {
+  if (!isOpen.value || manuallyClosed.value || reconnectTimer) return
+  const delay = Math.min(2000*(reconnectAttempts+1),10000)
+  reconnectTimer = setTimeout(()=>{ reconnectTimer=null; reconnectAttempts++; connect() }, delay)
+}
+
+const clearReconnect = () => { if(reconnectTimer){ clearTimeout(reconnectTimer); reconnectTimer=null } }
+
+const connect = () => {
+  if(!props.userId) return // samo za ulogirane
+  clearReconnect()
+  status.value='connecting'
+  manuallyClosed.value=false
+
+  if(socket.value) try{socket.value.close()}catch(_){}
+  socket.value = new WebSocket(`ws://127.0.0.1:8001/ws/assistant/${props.userId}`)
+
+  socket.value.onopen = () => {
+    status.value='online'; reconnectAttempts=0
+    if(messages.value.length===0) messages.value.push({id:Date.now(), type:'system', text:'Spojen na AI Asistenta. Kako ti mogu pomoći u kuhanju danas?', time:formatTime()})
+    scrollToBottom()
+  }
+  socket.value.onmessage = e => { try{handleIncomingMessage(JSON.parse(e.data))}catch(err){console.error(err)} }
+  socket.value.onclose = () => { socket.value=null; if(!manuallyClosed.value){status.value='offline'; scheduleReconnect()} }
+  socket.value.onerror = e => { console.error(e); status.value='error'; scheduleReconnect() }
+}
+
+const handleIncomingMessage = (data) => {
+  let text = ''
+  if(data.type==='response') text=data.content
+  else if(data.type==='substitutions') text=`Zamjene za ${data.ingredient}:\n`+data.substitutions.map(s=>`• ${s.substitute} (${s.ratio}) - ${s.note}`).join('\n')
+  else if(data.type==='recipe_started' || data.type==='recipe_complete') text=data.message
+  else if(data.type==='step') text=`Korak ${data.step_number}/${data.total_steps}:\n${data.instruction}`
+  else text=JSON.stringify(data)
+
+  messages.value.push({id:Date.now(), type:'assistant', text, time:formatTime()})
+  scrollToBottom()
+}
+
+const buildHistory = () => messages.value.filter(m=>['user','assistant'].includes(m.type)).slice(-10).map(m=>({role:m.type==='user'?'user':'assistant', content:m.text}))
+
+const sendMessage = () => {
+  const raw = inputMessage.value.trim(); if(!raw) return
+  if(!socket.value || status.value!=='online' || socket.value.readyState!==WebSocket.OPEN){ status.value='offline'; scheduleReconnect(); return }
+  messages.value.push({id:Date.now(), type:'user', text:raw, time:formatTime()})
+  socket.value.send(JSON.stringify({type:'chat', content:raw, history:buildHistory()}))
+  inputMessage.value=''
+  scrollToBottom()
+}
+
+const toggleChat = () => {
+  if(!props.userId) return // samo ulogirani
+  isOpen.value=!isOpen.value
+  if(isOpen.value){
+    if(!socket.value || status.value==='offline' || status.value==='error') connect()
+    else scrollToBottom()
+  } else {
+    manuallyClosed.value=true
+    clearReconnect()
+    if(socket.value) try{socket.value.close()}catch(_){}
+    socket.value=null
+    status.value='offline'
+  }
+}
+
+watch(()=>props.userId, ()=>{ if(isOpen.value){if(socket.value) try{socket.value.close()}catch(_){socket.value=null}; reconnectAttempts=0; connect()} })
+
+onUnmounted(()=>{ manuallyClosed.value=true; clearReconnect(); if(socket.value) try{socket.value.close()}catch(_){}})
+</script>
+
 
 <style scoped>
 /* theme vars samo za ovu komponentu */
