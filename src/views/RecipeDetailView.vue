@@ -2,9 +2,12 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
+import { computed } from 'vue'
+
 
 const route = useRoute()
 const router = useRouter()
+const currentUserId = ref(null)
 
 const recipe = ref(null)
 const loading = ref(true)
@@ -15,11 +18,15 @@ const token = localStorage.getItem('token')
 if (!token) router.push('/login')
 api.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
-// Svi prijavljeni korisnici mogu delete
-const isOwner = true
+const fetchCurrentUser = async () => {
+  const res = await api.get('/profile')
+  currentUserId.value = res.data.id
+}
 
 onMounted(async () => {
   try {
+    await fetchCurrentUser()
+
     const res = await api.get(`/recipes/${route.params.id}`)
     recipe.value = res.data
   } catch (err) {
@@ -29,6 +36,11 @@ onMounted(async () => {
     loading.value = false
   }
 })
+const isOwner = computed(() => {
+  if (!recipe.value || !currentUserId.value) return false
+  return recipe.value.user_id === currentUserId.value
+})
+
 
 async function deleteRecipe() {
   if (!confirm('Jeste li sigurni da želite obrisati ovaj recept?')) return

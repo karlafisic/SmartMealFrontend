@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/services/api'
 
@@ -34,6 +34,12 @@ onMounted(async () => {
     loading.value = false
   }
 })
+const sortedIngredients = computed(() => {
+  return [...allIngredients.value].sort((a, b) =>
+    a.name.localeCompare(b.name, 'hr', { sensitivity: 'base' })
+  )
+})
+
 
 function addIngredient() {
   if (
@@ -153,7 +159,7 @@ const goToRecipes = () => router.push('/recipes')
         <div class="col-md-8">
           <select v-model="ingredientToAdd" class="form-select">
             <option disabled :value="null">Odaberite sastojak...</option>
-            <option v-for="ing in allIngredients" :key="ing.id" :value="ing">
+            <option v-for="ing in sortedIngredients" :key="ing.id" :value="ing">
               {{ ing.name }}
             </option>
           </select>
