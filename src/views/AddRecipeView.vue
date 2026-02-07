@@ -7,6 +7,7 @@ const router = useRouter()
 
 // Polja recepta
 const name = ref('')
+const instructions = ref('') // ✅ NOVO
 const calories = ref(null)
 const protein = ref(null)
 const carbs = ref(null)
@@ -34,12 +35,12 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
 const sortedIngredients = computed(() => {
   return [...allIngredients.value].sort((a, b) =>
     a.name.localeCompare(b.name, 'hr', { sensitivity: 'base' })
   )
 })
-
 
 function addIngredient() {
   if (ingredientToAdd.value && ingredientToAdd.value.length > 0) {
@@ -61,8 +62,10 @@ async function submitRecipe() {
   error.value = ''
 
   try {
+    // 1) Create recipe (s uputama)
     const res = await api.post('/recipes', {
       name: name.value,
+      instructions: instructions.value, // ✅ NOVO
       calories: calories.value,
       protein: protein.value,
       carbs: carbs.value,
@@ -72,6 +75,7 @@ async function submitRecipe() {
 
     const recipeId = res.data.id
 
+    // 2) Attach ingredients
     if (selectedIngredients.value.length > 0) {
       await api.post(`/recipes/${recipeId}/ingredients`, {
         ingredient_ids: selectedIngredients.value.map(i => i.id)
@@ -123,6 +127,18 @@ const goToRecipes = () => router.push('/recipes')
         <div class="col-12">
           <label class="form-label fw-semibold">Naziv</label>
           <input v-model="name" type="text" class="form-control" />
+        </div>
+
+        <!-- ✅ NOVO: upute/opis -->
+        <div class="col-12">
+          <label class="form-label fw-semibold">Opis / Upute pripreme</label>
+          <textarea
+            v-model="instructions"
+            class="form-control"
+            rows="4"
+            placeholder="npr. 2 jaja, posoliti, razmutiti, izliti na tavu..."
+          ></textarea>
+          <small class="text-muted">Možeš pisati u više redova.</small>
         </div>
 
         <div class="col-md-4">

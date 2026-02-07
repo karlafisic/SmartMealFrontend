@@ -136,6 +136,15 @@ function goBackToRecipes() {
             </div>
           </div>
         </div>
+        <!-- ✅ NOVO: UPUTE -->
+        <h5 class="fw-bold mb-3 section-title">Opis / Upute pripreme</h5>
+
+        <div class="p-3 rounded-3 shadow-sm mb-4 instructions-box">
+          <p class="mb-0 instructions-text">
+            {{ recipe.instructions || 'Nema unesenih uputa.' }}
+          </p>
+        </div>
+
 
         <!-- INGREDIENTS -->
         <h5 class="fw-bold mb-3 section-title">Sastojci</h5>
@@ -249,4 +258,14 @@ function goBackToRecipes() {
   border-radius: 50%;
   background-color: #B08968;
 }
+.instructions-box {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(176, 137, 104, 0.25);
+}
+
+.instructions-text {
+  white-space: pre-line; /* ✅ čuva nove linije */
+  color: #3E2723;
+}
+
 </style>

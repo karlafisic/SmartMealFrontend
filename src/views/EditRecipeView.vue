@@ -10,6 +10,7 @@ const error = ref('')
 
 // Recipe fields
 const name = ref('')
+const instructions = ref('') // ✅ NOVO
 const calories = ref('')
 const protein = ref('')
 const carbs = ref('')
@@ -38,7 +39,6 @@ const filteredIngredients = computed(() => {
   )
 })
 
-
 // Load recipe + ingredients
 onMounted(async () => {
   try {
@@ -46,6 +46,7 @@ onMounted(async () => {
     const r = res.data
 
     name.value = r.name
+    instructions.value = r.instructions ?? '' // ✅ NOVO
     calories.value = r.calories
     protein.value = r.protein
     carbs.value = r.carbs
@@ -73,6 +74,7 @@ const submit = async () => {
     // Update recipe fields
     await api.put(`/recipes/${route.params.id}`, {
       name: name.value,
+      instructions: instructions.value, // ✅ NOVO
       calories: Number(calories.value),
       protein: Number(protein.value),
       carbs: Number(carbs.value),
@@ -108,7 +110,7 @@ const removeIngredient = async (id) => {
   try {
     loading.value = true
     await api.delete(`/recipes/${route.params.id}/ingredients`, {
-      data: { ingredient_ids: [id] } // Laravel očekuje array
+      data: { ingredient_ids: [id] }
     })
     selectedIngredientIds.value = selectedIngredientIds.value.filter(x => x !== id)
   } catch (err) {
@@ -160,6 +162,17 @@ const goBack = () => router.back()
         <div class="col-12">
           <label class="form-label fw-semibold">Naziv</label>
           <input v-model="name" class="form-control" />
+        </div>
+
+        <!-- ✅ NOVO: upute/opis -->
+        <div class="col-12">
+          <label class="form-label fw-semibold">Opis / Upute pripreme</label>
+          <textarea
+            v-model="instructions"
+            class="form-control"
+            rows="4"
+            placeholder="npr.2 jaja, posoliti,razmutiti,izliti na tavu..."
+          ></textarea>
         </div>
 
         <div class="col-md-4">
@@ -258,14 +271,12 @@ const goBack = () => router.back()
 </template>
 
 <style scoped>
-/* BACKGROUND */
 .edit-bg {
   min-height: 100vh;
   background: #F5EFE6;
   padding: 24px;
 }
 
-/* PANEL */
 .edit-panel {
   position: relative;
   width: 100%;
@@ -288,7 +299,6 @@ const goBack = () => router.back()
   z-index: 1;
 }
 
-/* LOADING */
 .loading-overlay {
   position: absolute;
   inset: 0;
@@ -299,12 +309,10 @@ const goBack = () => router.back()
   z-index: 2000;
 }
 
-/* TITLES */
 .brand { color: #9C6644; }
 .section-title,
 .form-label { color: #3E2723; }
 
-/* BUTTONS */
 .btn-primary {
   background: #B08968;
   border-color: #B08968;
@@ -314,7 +322,6 @@ const goBack = () => router.back()
   border-color: #9C6644;
 }
 
-/* SEARCH RESULTS */
 .search-results {
   max-height: 200px;
   overflow-y: auto;
@@ -336,7 +343,6 @@ const goBack = () => router.back()
   background: rgba(176,137,104,.15);
 }
 
-/* TAGS */
 .ingredient-badge {
   background: #B08968;
   color: #fff;
