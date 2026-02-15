@@ -12,9 +12,10 @@ import MealsView from '@/views/MealsView.vue'
 import MealPlanView from '@/views/MealPlanView.vue'
 import RecommendationView from '@/views/RecommendationView.vue'
 import AnalyticsView from '@/views/AnalyticsView.vue'   
+import Dashboard from '@/views/DashboardView.vue'
 
 const routes = [
-  { path: '/', redirect: '/recipes' },
+  { path: '/', redirect: '/login' },
 
   { path: '/recipes', name: 'recipes', component: RecipesView },
   { path: '/recipes/:id', name: 'recipe-detail', component: RecipeDetailView, props: true },
@@ -25,7 +26,12 @@ const routes = [
     component: AddRecipeView,
     meta: { requiresAuth: true }  
   },
-
+  {
+  path: '/dashboard',
+  name: 'Dashboard',
+  component: Dashboard,
+  meta: { requiresAuth: true }
+  },
   {
     path: '/recipes/:id/edit',
     name: 'edit-recipe',

@@ -7,7 +7,7 @@ const router = useRouter()
 
 // Polja recepta
 const name = ref('')
-const instructions = ref('') // ✅ NOVO
+const instructions = ref('')
 const calories = ref(null)
 const protein = ref(null)
 const carbs = ref(null)
@@ -18,6 +18,9 @@ const prep_time = ref(null)
 const allIngredients = ref([])
 const selectedIngredients = ref([])
 const ingredientToAdd = ref([])
+
+// ✅ NOVO: search
+const ingredientSearch = ref('')
 
 // Greške/loading
 const error = ref('')
@@ -36,15 +39,31 @@ onMounted(async () => {
   }
 })
 
-const sortedIngredients = computed(() => {
-  return [...allIngredients.value].sort((a, b) =>
+// helper za HR slova i "fuzzy" pretragu
+function normalizeText(s) {
+  return (s || '')
+    .toString()
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // makne dijakritike
+}
+
+// ✅ NOVO: filtrirani + sortirani sastojci
+const filteredIngredients = computed(() => {
+  const q = normalizeText(ingredientSearch.value)
+  const list = [...allIngredients.value].sort((a, b) =>
     a.name.localeCompare(b.name, 'hr', { sensitivity: 'base' })
   )
+
+  if (!q) return list
+  return list.filter(ing => normalizeText(ing.name).includes(q))
 })
 
 function addIngredient() {
-  if (ingredientToAdd.value && ingredientToAdd.value.length > 0) {
-    ingredientToAdd.value.forEach(ingredient => {
+  const toAdd = ingredientToAdd.value
+  if (toAdd && toAdd.length > 0) {
+    toAdd.forEach(ingredient => {
       if (!selectedIngredients.value.find(i => i.id === ingredient.id)) {
         selectedIngredients.value.push(ingredient)
       }
@@ -58,14 +77,15 @@ function removeIngredient(id) {
 }
 
 async function submitRecipe() {
+  if (!name.value?.trim()) return
+
   loading.value = true
   error.value = ''
 
   try {
-    // 1) Create recipe (s uputama)
     const res = await api.post('/recipes', {
-      name: name.value,
-      instructions: instructions.value, // ✅ NOVO
+      name: name.value.trim(),
+      instructions: instructions.value?.trim() || '',
       calories: calories.value,
       protein: protein.value,
       carbs: carbs.value,
@@ -75,7 +95,6 @@ async function submitRecipe() {
 
     const recipeId = res.data.id
 
-    // 2) Attach ingredients
     if (selectedIngredients.value.length > 0) {
       await api.post(`/recipes/${recipeId}/ingredients`, {
         ingredient_ids: selectedIngredients.value.map(i => i.id)
@@ -95,154 +114,191 @@ const goToRecipes = () => router.push('/recipes')
 </script>
 
 <template>
-  <div class="add-bg d-flex align-items-center justify-content-center">
-    <div class="add-panel shadow-lg rounded-4">
+  <div class="page">
+    <div class="add-bg">
+      <div class="add-panel shadow-lg rounded-4">
 
-      <!-- LOADING -->
-      <div v-if="loading" class="loading-overlay">
-        <div class="spinner-border" role="status">
-          <span class="visually-hidden">Učitavanje...</span>
-        </div>
-      </div>
-
-      <!-- HEADER -->
-      <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-          <h2 class="fw-bold brand mb-1">Dodaj recept</h2>
-          <p class="text-muted mb-0">Kreiraj novi SmartMeal recept.</p>
+        <div v-if="loading" class="loading-overlay">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Učitavanje...</span>
+          </div>
         </div>
 
-        <button class="btn btn-outline-secondary fw-semibold" @click="goToRecipes">
-          ← Natrag
-        </button>
-      </div>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <h2 class="fw-bold brand mb-1">Dodaj recept</h2>
+            <p class="text-muted mb-0">Kreiraj novi SmartMeal recept.</p>
+          </div>
 
-      <!-- ERROR -->
-      <div v-if="error" class="alert alert-danger py-2">
-        {{ error }}
-      </div>
-
-      <!-- FORM -->
-      <div class="row g-3">
-        <div class="col-12">
-          <label class="form-label fw-semibold">Naziv</label>
-          <input v-model="name" type="text" class="form-control" />
-        </div>
-
-        <!-- ✅ NOVO: upute/opis -->
-        <div class="col-12">
-          <label class="form-label fw-semibold">Opis / Upute pripreme</label>
-          <textarea
-            v-model="instructions"
-            class="form-control"
-            rows="4"
-            placeholder="npr. 2 jaja, posoliti, razmutiti, izliti na tavu..."
-          ></textarea>
-          <small class="text-muted">Možeš pisati u više redova.</small>
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Kalorije</label>
-          <input v-model.number="calories" type="number" class="form-control" />
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Proteini</label>
-          <input v-model.number="protein" type="number" class="form-control" />
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Ugljikohidrati</label>
-          <input v-model.number="carbs" type="number" class="form-control" />
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Masti</label>
-          <input v-model.number="fat" type="number" class="form-control" />
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Vrijeme pripreme (min)</label>
-          <input v-model.number="prep_time" type="number" class="form-control" />
-        </div>
-      </div>
-
-      <hr class="my-3" />
-
-      <!-- INGREDIENTS -->
-      <h6 class="fw-bold mb-2 section-title">Sastojci</h6>
-
-      <div class="row g-2 align-items-end">
-        <div class="col-md-8">
-          <select v-model="ingredientToAdd" class="form-select" multiple size="6">
-            <option v-for="ing in sortedIngredients" :key="ing.id" :value="ing">
-              {{ ing.name }}
-            </option>
-          </select>
-          <small class="text-muted">Drži Ctrl za odabir više sastojaka</small>
-        </div>
-
-        <div class="col-md-4">
-          <button
-            class="btn btn-primary w-100 fw-bold"
-            @click="addIngredient"
-            :disabled="!ingredientToAdd || ingredientToAdd.length === 0"
-          >
-            Dodaj
+          <button type="button" class="btn btn-outline-secondary fw-semibold" @click="goToRecipes">
+            ← Natrag
           </button>
         </div>
-      </div>
 
-      <div class="mt-2" v-if="selectedIngredients.length">
-        <div class="d-flex flex-wrap gap-2">
-          <span
-            v-for="ing in selectedIngredients"
-            :key="ing.id"
-            class="badge rounded-pill ingredient-badge"
-          >
-            {{ ing.name }}
-            <button class="btn-close ms-2" @click="removeIngredient(ing.id)"></button>
-          </span>
+        <div v-if="error" class="alert alert-danger py-2">
+          {{ error }}
         </div>
-      </div>
 
-      <!-- ACTIONS -->
-      <div class="d-flex gap-2 mt-3">
-        <button
-          class="btn btn-primary fw-bold flex-grow-1"
-          @click="submitRecipe"
-          :disabled="loading || !name"
-        >
-          Spremi
-        </button>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Naziv</label>
+            <input v-model="name" type="text" class="form-control" />
+          </div>
 
-        <button class="btn btn-outline-secondary fw-bold" @click="goToRecipes">
-          Odustani
-        </button>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Opis / Upute pripreme</label>
+            <textarea
+              v-model="instructions"
+              class="form-control"
+              rows="4"
+              placeholder="npr. 2 jaja, posoliti, razmutiti, izliti na tavu..."
+            ></textarea>
+            <small class="text-muted">Možeš pisati u više redova.</small>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Kalorije</label>
+            <input v-model.number="calories" type="number" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Proteini</label>
+            <input v-model.number="protein" type="number" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Ugljikohidrati</label>
+            <input v-model.number="carbs" type="number" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Masti</label>
+            <input v-model.number="fat" type="number" class="form-control" />
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Vrijeme pripreme (min)</label>
+            <input v-model.number="prep_time" type="number" class="form-control" />
+          </div>
+        </div>
+
+        <hr class="my-3" />
+
+        <h6 class="fw-bold mb-2 section-title">Sastojci</h6>
+
+        <!-- ✅ NOVO: search input -->
+        <div class="row g-2 mb-2">
+          <div class="col-12 col-md-8">
+            <input
+              v-model="ingredientSearch"
+              type="text"
+              class="form-control"
+              placeholder="Pretraži sastojke (npr. piletina, sir, rajčica...)"
+            />
+            <small class="text-muted">
+              Pretraga radi i bez dijakritika (npr. “cokolada” = “čokolada”).
+            </small>
+          </div>
+
+          <div class="col-12 col-md-4">
+            <button
+              type="button"
+              class="btn btn-outline-secondary w-100 fw-bold"
+              @click="ingredientSearch = ''"
+              :disabled="!ingredientSearch"
+            >
+              Očisti pretragu
+            </button>
+          </div>
+        </div>
+
+        <div class="row g-2 align-items-end">
+          <div class="col-md-8">
+            <select v-model="ingredientToAdd" class="form-select" multiple size="7">
+              <!-- ✅ koristi filteredIngredients -->
+              <option v-for="ing in filteredIngredients" :key="ing.id" :value="ing">
+                {{ ing.name }}
+              </option>
+            </select>
+            <small class="text-muted">Drži Ctrl za odabir više sastojaka</small>
+
+            <!-- ✅ mali info kad nema rezultata -->
+            <div v-if="!loading && filteredIngredients.length === 0" class="text-muted mt-2">
+              Nema sastojaka za “{{ ingredientSearch }}”.
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <button
+              type="button"
+              class="btn btn-primary w-100 fw-bold"
+              @click="addIngredient"
+              :disabled="!ingredientToAdd || ingredientToAdd.length === 0"
+            >
+              Dodaj
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-2" v-if="selectedIngredients.length">
+          <div class="d-flex flex-wrap gap-2">
+            <span
+              v-for="ing in selectedIngredients"
+              :key="ing.id"
+              class="badge rounded-pill ingredient-badge"
+            >
+              {{ ing.name }}
+              <button
+                type="button"
+                class="btn-close ms-2"
+                aria-label="Ukloni"
+                @click="removeIngredient(ing.id)"
+              ></button>
+            </span>
+          </div>
+        </div>
+
+        <div class="actions-bar mt-3">
+          <div class="d-flex gap-2">
+            <button
+              type="button"
+              class="btn btn-primary fw-bold flex-grow-1"
+              @click="submitRecipe"
+              :disabled="loading || !name || !name.trim()"
+            >
+              Spremi
+            </button>
+
+            <button type="button" class="btn btn-outline-secondary fw-bold" @click="goToRecipes">
+              Odustani
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.page { min-height: 100vh; }
+
 .add-bg {
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   background: #F5EFE6;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 16px;
 }
 
-/* PANEL */
 .add-panel {
   position: relative;
   width: 100%;
   max-width: 980px;
-  max-height: 96vh;
-  padding: 0.1rem 2rem;
-  overflow: hidden;
+  overflow: visible;
+  padding: 0.75rem 2rem 1rem;
   background: #ffffff;
   border-radius: 16px;
 }
@@ -256,19 +312,14 @@ const goToRecipes = () => router.push('/recipes')
   background-position: center;
   opacity: 0.12;
   z-index: 0;
+  border-radius: 16px;
 }
 
-.add-panel > * {
-  position: relative;
-  z-index: 1;
-}
+.add-panel > * { position: relative; z-index: 1; }
 
-/* TITLES */
 .brand { color: #9C6644; }
-.section-title,
-.form-label { color: #3E2723; }
+.section-title, .form-label { color: #3E2723; }
 
-/* BUTTONS */
 .btn-primary {
   background-color: #9C6644 !important;
   border-color: #9C6644 !important;
@@ -291,31 +342,36 @@ const goToRecipes = () => router.push('/recipes')
   color: #fff;
 }
 
-/* FORM CONTROLS - pregazivanje plave focus boje */
 .form-control:focus,
 .form-select:focus {
   border-color: #9C6644 !important;
   box-shadow: 0 0 0 0.25rem rgba(156, 102, 68, 0.25) !important;
 }
 
-/* SPINNER - smeđa boja umjesto plave */
 .spinner-border {
   color: #9C6644 !important;
   border-color: currentColor transparent currentColor transparent !important;
 }
 
-/* TAGS */
 .ingredient-badge {
   background: rgba(255,255,255,0.9);
   border: 1px solid rgba(176,137,104,0.45);
   color: #9C6644;
   padding: 0.45rem 0.7rem;
-  cursor: pointer;
-  display: flex;
+  cursor: default;
+  display: inline-flex;
   align-items: center;
 }
 
-/* LOADER */
+.actions-bar {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0 4px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+
 .loading-overlay {
   position: absolute;
   inset: 0;
@@ -325,5 +381,6 @@ const goToRecipes = () => router.push('/recipes')
   justify-content: center;
   background: rgba(255,255,255,0.55);
   backdrop-filter: blur(2px);
+  border-radius: 16px;
 }
 </style>
