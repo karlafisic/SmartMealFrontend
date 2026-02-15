@@ -115,8 +115,12 @@ const clearAll = () => {
       <!-- NAVBAR -->
       <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
         <div class="container-fluid">
-          <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
-
+<router-link
+  to="/dashboard"
+  class="navbar-brand fw-bold brand text-decoration-none"
+>
+  SmartMeal
+</router-link>
           <div class="ms-auto d-flex gap-2 align-items-center">
             <button class="btn btn-outline-primary fw-semibold" @click="goMeals">
               Obroci

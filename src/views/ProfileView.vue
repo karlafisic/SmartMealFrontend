@@ -4,15 +4,31 @@ import { useRouter } from 'vue-router'
 import api from '@/services/api'
 
 const router = useRouter()
+
 const user = ref({
   name: '',
   email: '',
-  goal: ''
+  goal: '',
+  allergies: [] // ✅ novo
 })
+
 const loading = ref(true)
 const error = ref('')
 const success = ref('')
 const menuOpen = ref(false)
+
+// ✅ Alergeni koje nudimo
+const allergyOptions = [
+  { key: 'gluten', label: 'Gluten' },
+  { key: 'eggs', label: 'Jaja' },
+  { key: 'milk', label: 'Mlijeko' },
+  { key: 'peanuts', label: 'Kikiriki' },
+  { key: 'tree_nuts', label: 'Orašasti plodovi' },
+  { key: 'soy', label: 'Soja' },
+  { key: 'fish', label: 'Riba' },
+  { key: 'shellfish', label: 'Školjke / plodovi mora' },
+  { key: 'sesame', label: 'Sezam' },
+]
 
 // --------------------
 // Autentikacija
@@ -27,7 +43,12 @@ api.defaults.headers.common['Authorization'] = `Bearer ${token}`
 onMounted(async () => {
   try {
     const res = await api.get('/profile')
-    user.value = res.data
+    user.value = {
+      name: res.data?.name ?? '',
+      email: res.data?.email ?? '',
+      goal: res.data?.goal ?? '',
+      allergies: Array.isArray(res.data?.allergies) ? res.data.allergies : [], // ✅
+    }
   } catch (err) {
     console.error(err)
     router.push('/login')
@@ -45,15 +66,26 @@ async function saveProfile() {
   loading.value = true
 
   try {
-    const res = await api.put('/profile', {
+    const payload = {
       name: user.value.name,
-      goal: user.value.goal || null
-    })
+      // ✅ ako je "", spremi null
+      goal: user.value.goal ? user.value.goal : null,
+      allergies: user.value.allergies || [], // ✅
+    }
 
-    user.value = res.data.user
+    const res = await api.put('/profile', payload)
+
+    // backend vraća res.data.user
+    user.value = {
+      ...user.value,
+      ...res.data.user,
+      allergies: Array.isArray(res.data?.user?.allergies) ? res.data.user.allergies : [],
+    }
+
     success.value = res.data.message || 'Profil je uspješno ažuriran.'
   } catch (err) {
     console.error(err)
+    // ako želiš prikazati validation errors, može se proširiti
     error.value = 'Greška pri ažuriranju profila'
   } finally {
     loading.value = false
@@ -94,7 +126,12 @@ const logout = () => {
       <!-- NAVBAR -->
       <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4 rounded-4 px-3 shadow-sm custom-navbar">
         <div class="container-fluid">
-          <a class="navbar-brand fw-bold brand" href="#">SmartMeal AI</a>
+          <router-link
+            to="/dashboard"
+            class="navbar-brand fw-bold brand text-decoration-none"
+          >
+            SmartMeal
+          </router-link>
 
           <span class="me-3 d-none d-lg-inline">Pozdrav, {{ user.name }}</span>
 
@@ -149,7 +186,7 @@ const logout = () => {
       <!-- NASLOV -->
       <div class="mb-3">
         <h2 class="fw-bold brand mb-1">Profil korisnika</h2>
-        <p class="text-muted mb-0">Ažurirajte svoje ime i cilj.</p>
+        <p class="text-muted mb-0">Ažurirajte svoje ime, cilj i alergije.</p>
       </div>
 
       <!-- ERROR / SUCCESS -->
@@ -184,6 +221,31 @@ const logout = () => {
               <option value="maintenance">Održavanje</option>
               <option value="muscle_gain">Povećanje mišićne mase</option>
             </select>
+          </div>
+
+          <!-- ✅ Alergije -->
+          <div class="col-12">
+            <label class="form-label fw-semibold">Alergije (opcionalno)</label>
+
+            <div class="allergy-grid">
+              <label
+                v-for="a in allergyOptions"
+                :key="a.key"
+                class="form-check allergy-item"
+              >
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  :value="a.key"
+                  v-model="user.allergies"
+                />
+                <span class="form-check-label">{{ a.label }}</span>
+              </label>
+            </div>
+
+            <div class="small text-muted mt-2">
+              Ako odabereš alergije, kasnije možemo filtrirati preporuke i recepte koji sadrže te sastojke.
+            </div>
           </div>
         </div>
 
@@ -400,5 +462,25 @@ const logout = () => {
   background-color: #9C6644;
   border-color: #9C6644;
   color: #fff;
+}
+
+/* ✅ alergije layout */
+.allergy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  padding-top: 6px;
+}
+@media (max-width: 768px) {
+  .allergy-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.allergy-item {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(176, 137, 104, 0.22);
+  padding: 10px 12px;
+  border-radius: 12px;
 }
 </style>

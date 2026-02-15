@@ -88,7 +88,7 @@ async function login() {
 
     localStorage.setItem('token', res.data.token)
     success.value = 'Uspješna prijava! Preusmjeravanje...'
-    setTimeout(() => router.push('/recipes'), 1000)
+    setTimeout(() => router.push('/dashboard'), 1000)
 
   } catch (err) {
     error.value =
